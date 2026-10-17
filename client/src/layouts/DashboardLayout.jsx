@@ -19,11 +19,14 @@ import {
   FiEdit3,
   FiActivity,
   FiPieChart,
+  FiInfo,
 } from 'react-icons/fi';
+import AboutDeveloperModal from '../components/AboutDeveloperModal';
 
 const DashboardLayout = () => {
   const { user, logout, isStaff, isStudent, isAdmin, isTeacher } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [aboutModalOpen, setAboutModalOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -173,11 +176,19 @@ const DashboardLayout = () => {
           })}
         </nav>
 
-        {/* Logout Button */}
-        <div className="p-4 border-t border-slate-800">
+        {/* Sidebar Actions */}
+        <div className="p-4 border-t border-slate-800 space-y-2">
+          <button
+            onClick={() => setAboutModalOpen(true)}
+            className="flex w-full items-center justify-center space-x-2 rounded-xl bg-slate-950/60 border border-slate-800/80 px-4 py-2 text-xs font-medium text-slate-400 hover:text-white hover:border-slate-700 transition-colors"
+          >
+            <FiInfo className="h-3.5 w-3.5 text-indigo-400" />
+            <span>About Developer</span>
+          </button>
+
           <button
             onClick={handleLogout}
-            className="flex w-full items-center justify-center space-x-2 rounded-xl bg-slate-800/80 px-4 py-2.5 text-sm font-medium text-slate-300 hover:bg-rose-600 hover:text-white transition-colors"
+            className="flex w-full items-center justify-center space-x-2 rounded-xl bg-slate-800/80 px-4 py-2 text-sm font-medium text-slate-300 hover:bg-rose-600 hover:text-white transition-colors"
           >
             <FiLogOut className="h-4 w-4" />
             <span>Sign Out</span>
@@ -202,7 +213,16 @@ const DashboardLayout = () => {
             </div>
           </div>
 
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-3 sm:space-x-4">
+            <button
+              onClick={() => setAboutModalOpen(true)}
+              title="About Developer & AMS Project"
+              className="hidden sm:flex items-center space-x-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:text-indigo-600 hover:bg-white hover:border-indigo-200 transition shadow-sm"
+            >
+              <FiInfo className="h-3.5 w-3.5 text-indigo-500" />
+              <span>About Developer</span>
+            </button>
+
             <div className="flex items-center space-x-2 rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-600">
               <FiCalendar className="h-3.5 w-3.5 text-slate-500" />
               <span>{todayStr}</span>
@@ -230,7 +250,38 @@ const DashboardLayout = () => {
         <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
           <Outlet />
         </main>
+
+        {/* Clean, Understated Application Footer */}
+        <footer className="border-t border-slate-200 bg-white px-4 py-3 sm:px-6 text-xs text-slate-500 flex flex-col sm:flex-row items-center justify-between gap-2">
+          <div className="flex flex-wrap items-center gap-1.5 text-center sm:text-left">
+            <span>Developed by</span>
+            <button
+              onClick={() => setAboutModalOpen(true)}
+              className="font-semibold text-slate-700 hover:text-indigo-600 underline underline-offset-2 transition"
+            >
+              Ayush Shedge
+            </button>
+            <span className="text-slate-300">•</span>
+            <span className="text-slate-500">Vidyalankar School of Information Technology, Mumbai</span>
+          </div>
+          <div className="flex items-center space-x-3 text-[11px] text-slate-400">
+            <span>MERN Attendance Management System</span>
+            <span>•</span>
+            <button
+              onClick={() => setAboutModalOpen(true)}
+              className="text-indigo-600 hover:text-indigo-700 font-medium transition"
+            >
+              Profile & Architecture
+            </button>
+          </div>
+        </footer>
       </div>
+
+      {/* About Developer Modal */}
+      <AboutDeveloperModal
+        isOpen={aboutModalOpen}
+        onClose={() => setAboutModalOpen(false)}
+      />
     </div>
   );
 };

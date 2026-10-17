@@ -13,7 +13,9 @@ import {
   FiCalendar,
   FiCheckCircle,
   FiXCircle,
+  FiDownload,
 } from 'react-icons/fi';
+import { exportToCsv } from '../../utils/exportCsv';
 
 const AttendanceRecordsPage = () => {
   const [records, setRecords] = useState([]);
@@ -136,6 +138,40 @@ const AttendanceRecordsPage = () => {
     setPage(1);
   };
 
+  const handleExportCsv = async () => {
+    try {
+      const today = new Date().toISOString().substring(0, 10);
+      const params = { limit: 1000 };
+      if (dateFilter) params.date = dateFilter;
+      if (subjectFilter) params.subject = subjectFilter;
+      if (statusFilter) params.status = statusFilter;
+      if (semesterFilter) params.semester = semesterFilter;
+      if (divisionFilter) params.division = divisionFilter;
+
+      const res = await api.get('/attendance', { params });
+      const exportList = res.data.data || records;
+
+      const columns = [
+        { label: 'Date', accessor: (r) => new Date(r.date).toLocaleDateString('en-GB') },
+        { label: 'Student Roll No', accessor: (r) => r.student?.rollNumber || '' },
+        { label: 'Student ID', accessor: (r) => r.student?.studentId || '' },
+        { label: 'Student Name', accessor: (r) => r.student?.name || '' },
+        { label: 'Semester', accessor: (r) => r.student?.semester || '' },
+        { label: 'Division', accessor: (r) => r.student?.division || '' },
+        { label: 'Subject Code', accessor: (r) => r.subject?.subjectCode || '' },
+        { label: 'Subject Name', accessor: (r) => r.subject?.subjectName || '' },
+        { label: 'Session / Lecture', accessor: (r) => r.session || 'Lecture 1' },
+        { label: 'Status', key: 'status' },
+        { label: 'Marked By', accessor: (r) => r.markedBy?.name || 'Faculty' },
+        { label: 'Remarks', accessor: (r) => r.remarks || 'None' },
+      ];
+
+      exportToCsv(columns, exportList, `admin-attendance-logs-${today}.csv`);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Title */}
@@ -148,8 +184,17 @@ const AttendanceRecordsPage = () => {
             Search, filter, inspect, and modify individual student attendance logs
           </p>
         </div>
-        <div className="text-xs font-semibold text-slate-500">
-          Total Logs: <span className="text-slate-900 font-bold">{totalRecords}</span>
+        <div className="flex items-center space-x-3">
+          <button
+            onClick={handleExportCsv}
+            className="flex items-center space-x-1.5 rounded-xl bg-indigo-600 px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-indigo-700 transition"
+          >
+            <FiDownload className="h-3.5 w-3.5" />
+            <span>Export CSV</span>
+          </button>
+          <div className="text-xs font-semibold text-slate-500">
+            Total Logs: <span className="text-slate-900 font-bold">{totalRecords}</span>
+          </div>
         </div>
       </div>
 

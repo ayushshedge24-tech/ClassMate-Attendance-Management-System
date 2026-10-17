@@ -11,7 +11,9 @@ import {
   FiChevronLeft,
   FiChevronRight,
   FiRefreshCw,
+  FiDownload,
 } from 'react-icons/fi';
+import { exportToCsv } from '../../utils/exportCsv';
 
 const StudentAttendanceHistory = () => {
   const { user } = useAuth();
@@ -80,6 +82,20 @@ const StudentAttendanceHistory = () => {
     setCurrentPage(1);
   };
 
+  const handleExportCsv = () => {
+    const today = new Date().toISOString().substring(0, 10);
+    const columns = [
+      { label: 'Date', accessor: (r) => new Date(r.date).toLocaleDateString('en-GB') },
+      { label: 'Day of Week', accessor: (r) => new Date(r.date).toLocaleDateString('en-US', { weekday: 'long' }) },
+      { label: 'Subject Code', accessor: (r) => r.subject?.subjectCode || '' },
+      { label: 'Subject Name', accessor: (r) => r.subject?.subjectName || '' },
+      { label: 'Session / Lecture', accessor: (r) => r.session || 'Lecture 1' },
+      { label: 'Attendance Status', key: 'status' },
+      { label: 'Faculty Remarks', accessor: (r) => r.remarks || 'None' },
+    ];
+    exportToCsv(columns, records, `my-attendance-history-${user?.studentId || 'records'}-${today}.csv`);
+  };
+
   // Pagination calculations
   const totalRecords = records.length;
   const totalPages = Math.ceil(totalRecords / itemsPerPage) || 1;
@@ -106,6 +122,13 @@ const StudentAttendanceHistory = () => {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={handleExportCsv}
+            className="flex items-center space-x-1.5 rounded-xl bg-indigo-600 px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-indigo-700 transition"
+          >
+            <FiDownload className="h-3.5 w-3.5" />
+            <span>Export CSV</span>
+          </button>
           <div className="rounded-xl border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-700 shadow-sm">
             Total Sessions: <span className="font-bold text-slate-900">{totalRecords}</span>
           </div>

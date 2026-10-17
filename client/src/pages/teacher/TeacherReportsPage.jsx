@@ -11,7 +11,9 @@ import {
   FiAlertTriangle,
   FiSearch,
   FiFilter,
+  FiDownload,
 } from 'react-icons/fi';
+import { exportToCsv } from '../../utils/exportCsv';
 
 const TeacherReportsPage = () => {
   const [searchParams] = useSearchParams();
@@ -74,6 +76,64 @@ const TeacherReportsPage = () => {
     window.print();
   };
 
+  const handleExportCsv = () => {
+    const today = new Date().toISOString().substring(0, 10);
+    if (reportType === 'student') {
+      const columns = [
+        { label: 'Roll Number', key: 'rollNumber' },
+        { label: 'Student ID', key: 'studentId' },
+        { label: 'Student Name', key: 'name' },
+        { label: 'Semester', key: 'semester' },
+        { label: 'Division', key: 'division' },
+        { label: 'Email', key: 'email' },
+        { label: 'Total Recorded Classes', key: 'totalClasses' },
+        { label: 'Present Classes', key: 'presentClasses' },
+        { label: 'Absent Classes', key: 'absentClasses' },
+        { label: 'Attendance Percentage', accessor: (s) => `${s.percentage}%` },
+        { label: 'Academic Status', key: 'status' },
+      ];
+      exportToCsv(columns, filteredStudentReport, `faculty-student-report-${today}.csv`);
+    } else if (reportType === 'subject') {
+      const columns = [
+        { label: 'Subject Code', key: 'subjectCode' },
+        { label: 'Subject Name', key: 'subjectName' },
+        { label: 'Semester', key: 'semester' },
+        { label: 'Department', key: 'department' },
+        { label: 'Total Recorded Lectures', key: 'totalLectures' },
+        { label: 'Total Attendance Logs', key: 'totalRecords' },
+        { label: 'Present Logs', key: 'presentCount' },
+        { label: 'Absent Logs', key: 'absentCount' },
+        { label: 'Average Attendance Rate', accessor: (s) => `${s.averagePercentage}%` },
+      ];
+      exportToCsv(columns, reportData, `faculty-subject-averages-${today}.csv`);
+    } else if (reportType === 'daily') {
+      const columns = [
+        { label: 'Roll Number', accessor: (r) => r.student?.rollNumber || '' },
+        { label: 'Student ID', accessor: (r) => r.student?.studentId || '' },
+        { label: 'Student Name', accessor: (r) => r.student?.name || '' },
+        { label: 'Subject Code', accessor: (r) => r.subject?.subjectCode || '' },
+        { label: 'Subject Name', accessor: (r) => r.subject?.subjectName || '' },
+        { label: 'Session / Lecture', accessor: (r) => r.session || 'Lecture 1' },
+        { label: 'Attendance Status', key: 'status' },
+        { label: 'Remarks', accessor: (r) => r.remarks || 'None' },
+        { label: 'Date', accessor: () => selectedDate },
+      ];
+      exportToCsv(columns, reportData, `faculty-daily-attendance-${selectedDate}.csv`);
+    } else if (reportType === 'monthly') {
+      const columns = [
+        { label: 'Subject Code', key: 'subjectCode' },
+        { label: 'Subject Name', key: 'subjectName' },
+        { label: 'Semester', key: 'semester' },
+        { label: 'Total Monthly Records', key: 'total' },
+        { label: 'Present Count', key: 'present' },
+        { label: 'Absent Count', key: 'absent' },
+        { label: 'Monthly Attendance Rate', accessor: (s) => `${s.percentage}%` },
+        { label: 'Month', accessor: () => selectedMonth },
+      ];
+      exportToCsv(columns, reportData, `faculty-monthly-audit-${selectedMonth}.csv`);
+    }
+  };
+
   const filteredStudentReport =
     reportType === 'student'
       ? reportData.filter((stu) => {
@@ -100,13 +160,23 @@ const TeacherReportsPage = () => {
           </p>
         </div>
 
-        <button
-          onClick={handlePrint}
-          className="flex items-center space-x-2 rounded-xl bg-slate-800 px-4 py-2.5 text-xs font-semibold text-white shadow-sm hover:bg-slate-900 transition self-start sm:self-auto"
-        >
-          <FiPrinter className="h-4 w-4" />
-          <span>Print / Export PDF</span>
-        </button>
+        <div className="flex items-center space-x-2 self-start sm:self-auto">
+          <button
+            onClick={handleExportCsv}
+            className="flex items-center space-x-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-xs font-semibold text-white shadow-sm hover:bg-indigo-700 transition"
+          >
+            <FiDownload className="h-4 w-4" />
+            <span>Export CSV</span>
+          </button>
+
+          <button
+            onClick={handlePrint}
+            className="flex items-center space-x-2 rounded-xl bg-slate-800 px-4 py-2.5 text-xs font-semibold text-white shadow-sm hover:bg-slate-900 transition"
+          >
+            <FiPrinter className="h-4 w-4" />
+            <span>Print / Export PDF</span>
+          </button>
+        </div>
       </div>
 
       {/* Tabs Toolbar */}

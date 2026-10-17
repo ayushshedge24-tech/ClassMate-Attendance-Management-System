@@ -10,6 +10,7 @@ import {
   FiFilter,
   FiDownload,
 } from 'react-icons/fi';
+import { exportToCsv } from '../../utils/exportCsv';
 
 const ReportsPage = () => {
   const [activeTab, setActiveTab] = useState('student'); // 'student' or 'subject'
@@ -47,6 +48,46 @@ const ReportsPage = () => {
 
   const handlePrint = () => {
     window.print();
+  };
+
+  const handleExportCsv = () => {
+    const today = new Date().toISOString().substring(0, 10);
+    if (activeTab === 'student') {
+      const columns = [
+        { label: 'Roll Number', key: 'rollNumber' },
+        { label: 'Student ID', key: 'studentId' },
+        { label: 'Student Name', key: 'name' },
+        { label: 'Semester', key: 'semester' },
+        { label: 'Division', key: 'division' },
+        { label: 'Total Recorded Classes', key: 'total' },
+        { label: 'Present Classes', key: 'present' },
+        { label: 'Absent Classes', key: 'absent' },
+        { label: 'Attendance Percentage', accessor: (s) => `${s.percentage}%` },
+        {
+          label: 'Academic Eligibility Status',
+          accessor: (s) =>
+            s.total === 0
+              ? 'No Classes'
+              : s.percentage >= 75
+              ? 'Eligible'
+              : s.percentage >= 60
+              ? 'Warning'
+              : 'Defaulter (<75%)',
+        },
+      ];
+      exportToCsv(columns, studentReports, `admin-student-attendance-report-${today}.csv`);
+    } else {
+      const columns = [
+        { label: 'Subject Code', key: 'code' },
+        { label: 'Subject Name', key: 'name' },
+        { label: 'Semester', key: 'semester' },
+        { label: 'Total Recorded Sessions', key: 'totalClasses' },
+        { label: 'Present Sessions', key: 'present' },
+        { label: 'Absent Sessions', key: 'absent' },
+        { label: 'Average Attendance Rate', accessor: (s) => `${s.avgPercentage}%` },
+      ];
+      exportToCsv(columns, subjectReports, `admin-subject-attendance-report-${today}.csv`);
+    }
   };
 
   // 1. Calculate Student Reports
@@ -120,6 +161,14 @@ const ReportsPage = () => {
         </div>
 
         <div className="flex items-center space-x-2">
+          <button
+            onClick={handleExportCsv}
+            className="flex items-center space-x-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-xs font-semibold text-white shadow-sm hover:bg-indigo-700 transition"
+          >
+            <FiDownload className="h-4 w-4" />
+            <span>Export CSV</span>
+          </button>
+
           <button
             onClick={handlePrint}
             className="flex items-center space-x-2 rounded-xl bg-slate-800 px-4 py-2.5 text-xs font-semibold text-white shadow-sm hover:bg-slate-900 transition"

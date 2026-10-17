@@ -13,7 +13,9 @@ import {
   FiBookOpen,
   FiShield,
   FiArrowRight,
+  FiInfo,
 } from 'react-icons/fi';
+import AboutDeveloperModal from '../components/AboutDeveloperModal';
 
 const LoginPage = () => {
   const [roleTab, setRoleTab] = useState('staff'); // 'staff' (Admin/Teacher) or 'student'
@@ -21,6 +23,7 @@ const LoginPage = () => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [aboutModalOpen, setAboutModalOpen] = useState(false);
 
   const { login } = useAuth();
   const { success, error } = useToast();
@@ -241,10 +244,38 @@ const LoginPage = () => {
           </div>
         </div>
 
-        <p className="text-center text-xs text-indigo-300/80 mt-6">
-          MERN Attendance Management System • Final College Mini Project
-        </p>
+        <div className="text-center mt-6 space-y-1.5">
+          <p className="text-xs text-indigo-200/90 font-medium">
+            Developed by{' '}
+            <button
+              type="button"
+              onClick={() => setAboutModalOpen(true)}
+              className="text-white font-semibold underline underline-offset-2 hover:text-indigo-200 transition"
+            >
+              Ayush Shedge
+            </button>{' '}
+            • Vidyalankar School of Information Technology, Mumbai
+          </p>
+          <div className="flex items-center justify-center space-x-3 text-[11px] text-indigo-300/70">
+            <span>B.Sc. Information Technology (2027)</span>
+            <span>•</span>
+            <button
+              type="button"
+              onClick={() => setAboutModalOpen(true)}
+              className="text-indigo-300 hover:text-white transition underline underline-offset-2 flex items-center gap-1 inline-flex"
+            >
+              <FiInfo className="h-3 w-3" />
+              <span>About Developer</span>
+            </button>
+          </div>
+        </div>
       </div>
+
+      {/* About Developer Modal */}
+      <AboutDeveloperModal
+        isOpen={aboutModalOpen}
+        onClose={() => setAboutModalOpen(false)}
+      />
     </div>
   );
 };

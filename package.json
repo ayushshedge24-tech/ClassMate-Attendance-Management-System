@@ -9,7 +9,9 @@
     "start": "node server/server.js",
     "dev": "node server/server.js",
     "dev:watch": "concurrently \"npm run dev --prefix server\" \"npm run dev --prefix client\"",
-    "seed": "npm run seed --prefix server"
+    "seed": "npm run seed --prefix server",
+    "db:export": "node server/utils/exportDatabase.js",
+    "db:migrate": "node server/utils/importToAtlas.js"
   },
   "devDependencies": {
     "concurrently": "^9.1.2"

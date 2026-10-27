@@ -3,11 +3,12 @@
   "version": "1.0.0",
   "description": "MERN Attendance Management System - College Mini Project",
   "scripts": {
-    "build": "npm run build --prefix client",
+    "install-all": "npm install && npm install --prefix server && npm install --prefix client",
+    "build": "npm install --prefix server && npm install --prefix client && npm run build --prefix client",
+    "build:client": "npm run build --prefix client",
     "start": "node server/server.js",
     "dev": "node server/server.js",
     "dev:watch": "concurrently \"npm run dev --prefix server\" \"npm run dev --prefix client\"",
-    "install-all": "npm install && npm install --prefix server && npm install --prefix client",
     "seed": "npm run seed --prefix server"
   },
   "devDependencies": {

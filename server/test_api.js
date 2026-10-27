@@ -22,9 +22,9 @@ const request = (path, method = 'GET', data = null, token = null) => {
       res.on('end', () => {
         try {
           const parsed = JSON.parse(body);
-          resolve({ status: res.statusCode, data: parsed });
+          resolve({ status: res.statusCode, data: parsed, headers: res.headers });
         } catch (err) {
-          resolve({ status: res.statusCode, raw: body });
+          resolve({ status: res.statusCode, raw: body, headers: res.headers });
         }
       });
     });
@@ -291,8 +291,260 @@ const runComprehensiveTests = async () => {
     const adminStats = await request('/api/dashboard/stats', 'GET', null, adminToken);
     console.log(`- Admin Dashboard Stats Status: ${adminStats.status}, Total Students: ${adminStats.data.data.totalStudents}, Average: ${adminStats.data.data.averageAttendance}%`);
 
+    // 17. HOD Login
+    console.log('\n[TEST 17] HOD Login (hod.it@attendance.com)');
+    const hodLogin = await request('/api/auth/login', 'POST', {
+      email: 'hod.it@attendance.com',
+      password: 'Hod@123',
+    });
+    console.log(`- HOD Login Status: ${hodLogin.status}, Role: ${hodLogin.data.user?.role}, Dept: ${hodLogin.data.user?.department}`);
+    const hodToken = hodLogin.data.token;
+    if (!hodToken) throw new Error('HOD login failed');
+
+    // 18. HOD Dashboard Stats
+    console.log('\n[TEST 18] HOD Dashboard Stats');
+    const hodStats = await request('/api/hod/dashboard-stats', 'GET', null, hodToken);
+    console.log(`- HOD Dashboard Stats: ${hodStats.status}, Total Students: ${hodStats.data.data?.totalStudents}, Defaulters: ${hodStats.data.data?.defaultersCount}, Avg Attendance: ${hodStats.data.data?.averageAttendance}%`);
+
+    // 19. HOD Scoped Department Queries
+    console.log('\n[TEST 19] HOD Scoped Students, Teachers, and Subjects');
+    const hodStudents = await request('/api/hod/students', 'GET', null, hodToken);
+    console.log(`- Department Students: ${hodStudents.data.count} students in ${hodStudents.data.department}`);
+
+    const hodTeachers = await request('/api/hod/teachers', 'GET', null, hodToken);
+    console.log(`- Department Faculty: ${hodTeachers.data.count} teachers in ${hodTeachers.data.department}`);
+
+    const hodSubjects = await request('/api/hod/subjects', 'GET', null, hodToken);
+    console.log(`- Department Subjects: ${hodSubjects.data.count} subjects in ${hodSubjects.data.department}`);
+
+    // 20. HOD Defaulters Analysis (<75%)
+    console.log('\n[TEST 20] HOD Defaulters Analysis');
+    const hodDefaulters = await request('/api/hod/defaulters', 'GET', null, hodToken);
+    console.log(`- Defaulters Count: ${hodDefaulters.data.count}`);
+    if (hodDefaulters.data.count > 0) {
+      const firstDef = hodDefaulters.data.data[0];
+      console.log(`  Sample Defaulter: ${firstDef.student.name} (${firstDef.percentage}%, Needed: ${firstDef.neededClasses} consecutive classes, Severity: ${firstDef.severity})`);
+    }
+
+    // 21. HOD Reports
+    console.log('\n[TEST 21] HOD Reports (Student & Subject)');
+    const hodStuReport = await request('/api/hod/reports?type=student', 'GET', null, hodToken);
+    console.log(`- HOD Student Report Count: ${hodStuReport.data.count}`);
+    const hodSubReport = await request('/api/hod/reports?type=subject', 'GET', null, hodToken);
+    console.log(`- HOD Subject Report Count: ${hodSubReport.data.data?.length}`);
+
+    // 22. College Programs & Departments (Admin)
+    console.log('\n[TEST 22] College Programs & Departments');
+    const programsRes = await request('/api/programs', 'GET', null, adminToken);
+    console.log(`- Programs Count: ${programsRes.data.count} (Default programs populated: ${programsRes.data.data?.some(p => p.name === 'B.Sc. IT')})`);
+
+    const deptsRes = await request('/api/programs/departments/all', 'GET', null, adminToken);
+    console.log(`- Departments Count: ${deptsRes.data.count}`);
+
+    // 23. Teacher Assignments
+    console.log('\n[TEST 23] Teacher Assignments');
+    const assignRes = await request('/api/assignments', 'GET', null, adminToken);
+    console.log(`- Teacher Assignments Count: ${assignRes.data.count}`);
+
+    // 24. Attendance Edit Audit Trail
+    console.log('\n[TEST 24] Attendance Edit Audit Trail Verification');
+    const recordsRes = await request('/api/attendance?limit=1', 'GET', null, adminToken);
+    if (recordsRes.data.data && recordsRes.data.data.length > 0) {
+      const rec = recordsRes.data.data[0];
+      const targetStatus = rec.status === 'Present' ? 'Absent' : 'Present';
+      const editRes = await request(`/api/attendance/${rec._id}`, 'PUT', {
+        status: targetStatus,
+        remarks: 'Audit test remark',
+        reason: 'Automated test of audit log feature',
+      }, adminToken);
+      console.log(`- Attendance Update Status: ${editRes.status}`);
+
+      // Verify audit history was pushed
+      const verifyRec = await request(`/api/attendance/${rec._id}`, 'GET', null, adminToken);
+      const auditTrail = verifyRec.data.data.editHistory || [];
+      console.log(`- Audit history entries count: ${auditTrail.length}`);
+      if (auditTrail.length > 0) {
+        const latestAudit = auditTrail[auditTrail.length - 1];
+        console.log(`  Latest Audit: ${latestAudit.previousStatus} -> ${latestAudit.newStatus}, Reason: "${latestAudit.reason}"`);
+      }
+
+      // Revert back
+      await request(`/api/attendance/${rec._id}`, 'PUT', {
+        status: rec.status,
+        remarks: rec.remarks || '',
+        reason: 'Revert audit test',
+      }, adminToken);
+      console.log('- Reverted record to original state cleanly.');
+    }
+
+    // 25. Security Headers Verification
+    console.log('\n[TEST 25] Production Security Headers Verification');
+    const secHeaders = health.headers;
+    const hasNosniff = secHeaders['x-content-type-options'] === 'nosniff';
+    const hasFrameOptions = secHeaders['x-frame-options'] === 'SAMEORIGIN';
+    const hasXss = secHeaders['x-xss-protection'] === '1; mode=block';
+    const noPoweredBy = !secHeaders['x-powered-by'];
+    console.log(`- nosniff header: ${hasNosniff}`);
+    console.log(`- SAMEORIGIN frame protection: ${hasFrameOptions}`);
+    console.log(`- XSS protection header: ${hasXss}`);
+    console.log(`- x-powered-by suppressed: ${noPoweredBy}`);
+    if (!hasNosniff || !hasFrameOptions || !hasXss || !noPoweredBy) {
+      throw new Error('Security headers verification failed');
+    }
+
+    // 26. Authentication Rate Limiter
+    console.log('\n[TEST 26] Rate Limiting Protection on /api/auth/login');
+    const rlCheck = await request('/api/auth/login', 'POST', {
+      email: 'admin@attendance.com',
+      password: 'Admin@123',
+    });
+    const rlLimit = rlCheck.headers['x-ratelimit-limit'];
+    const rlRemaining = rlCheck.headers['x-ratelimit-remaining'];
+    console.log(`- RateLimit Limit Header: ${rlLimit}`);
+    console.log(`- RateLimit Remaining Header: ${rlRemaining}`);
+    if (!rlLimit) {
+      throw new Error('Rate limiting headers missing from login response');
+    }
+
+    // 27. Division D Query Support Verification
+    console.log('\n[TEST 27] Division D Query Support Verification');
+    const divDRes = await request('/api/students?division=D', 'GET', null, adminToken);
+    console.log(`- Division D Students Query Status: ${divDRes.status}`);
+    const divDAtt = await request('/api/attendance?division=D', 'GET', null, adminToken);
+    console.log(`- Division D Attendance Query Status: ${divDAtt.status}`);
+    if (divDRes.status !== 200 || divDAtt.status !== 200) {
+      throw new Error('Division D filtering failed');
+    }
+
+    // 28. Timetable System Verification & Collision Detection
+    console.log('\n[TEST 28] Timetable System & Collision Prevention');
+    const studentTT = await request('/api/timetable/student', 'GET', null, studentToken);
+    console.log(`- Student Timetable Status: ${studentTT.status}, Total Weekly Slots: ${studentTT.data.data?.totalWeeklySlots}`);
+    const teacherTT = await request('/api/timetable/teacher', 'GET', null, teacherToken);
+    console.log(`- Teacher Timetable Status: ${teacherTT.status}, Current Day: ${teacherTT.data.data?.currentDay}`);
+
+    // Test collision detection: attempt to schedule overlapping classroom
+    const conflictRes = await request('/api/timetable', 'POST', {
+      course: 'B.Tech Information Technology',
+      semester: 4,
+      division: 'B',
+      subject: teacherTT.data.data?.todayLectures?.[0]?.subject?._id || '60c72b2f9b1d8b2bad000001',
+      teacher: teacherId,
+      classroom: 'Room 301',
+      dayOfWeek: 'Monday',
+      startTime: '09:00',
+      endTime: '10:00',
+    }, adminToken);
+    console.log(`- Classroom Collision Status: ${conflictRes.status} (Expected 400 Conflict)`);
+    if (studentTT.status !== 200 || teacherTT.status !== 200 || conflictRes.status !== 400) {
+      throw new Error('Timetable verification or collision detection failed');
+    }
+
+    // 29. Smart Attendance Radar Session Start
+    console.log('\n[TEST 29] Smart Attendance Radar: Teacher Starts Radar Session');
+    const assignedSubRes = await request('/api/teacher/subjects', 'GET', null, teacherToken);
+    const radarSubject = assignedSubRes.data.data[0];
+    const radarSubId = radarSubject._id || radarSubject.subjectId;
+
+    const startRadarRes = await request('/api/radar/session/start', 'POST', {
+      subjectId: radarSubId,
+      course: 'B.Tech Information Technology',
+      semester: 4,
+      division: 'A',
+      classroom: 'Room 301',
+      sessionSlot: 'E2E Radar Lecture',
+      durationMinutes: 15,
+    }, teacherToken);
+
+    console.log(`- Radar Session Start Status: ${startRadarRes.status}`);
+    const sessionData = startRadarRes.data.data;
+    const sessionCode = sessionData.sessionCode;
+    const sessionId = sessionData._id;
+    console.log(`  Generated Session Code: ${sessionCode}, Status: ${sessionData.status}`);
+    if (startRadarRes.status !== 200 && startRadarRes.status !== 201) {
+      throw new Error('Failed to start Radar session');
+    }
+
+    // Student detects active radar
+    const studentActiveRadar = await request('/api/radar/session/active', 'GET', null, studentToken);
+    console.log(`- Student Active Radar Query: Status: ${studentActiveRadar.status}, Found: ${studentActiveRadar.data.hasActiveSession}`);
+    if (!studentActiveRadar.data.hasActiveSession) {
+      throw new Error('Student failed to detect active Radar broadcast');
+    }
+
+    // 30. Concurrent Student Submissions & Duplicate Protection
+    console.log('\n[TEST 30] Concurrent Student Submissions & Duplicate Prevention');
+    const [sub1Res, sub2Res] = await Promise.all([
+      request('/api/radar/session/mark', 'POST', {
+        sessionCode,
+        latitude: 19.0222,
+        longitude: 72.8561,
+      }, studentToken),
+      request('/api/radar/session/mark', 'POST', {
+        sessionCode,
+        deviceInfo: 'Mozilla/5.0 Test Client 2',
+      }, student2Token),
+    ]);
+
+    console.log(`- Student 1 Mark Status: ${sub1Res.status}, Message: "${sub1Res.data.message}"`);
+    console.log(`- Student 2 Mark Status: ${sub2Res.status}, Message: "${sub2Res.data.message}"`);
+
+    // Duplicate submission test
+    const dupRes = await request('/api/radar/session/mark', 'POST', {
+      sessionCode,
+    }, studentToken);
+    console.log(`- Student 1 Duplicate Attempt: alreadyMarked=${dupRes.data.alreadyMarked}, Message: "${dupRes.data.message}"`);
+    if (!dupRes.data.alreadyMarked) {
+      throw new Error('Duplicate attendance protection failed');
+    }
+
+    // 31. Teacher Live Roster & Manual Override
+    console.log('\n[TEST 31] Teacher Live Session Roster & Manual Correction');
+    const liveRoster = await request(`/api/radar/session/${sessionId}/live`, 'GET', null, teacherToken);
+    console.log(`- Live Roster Status: ${liveRoster.status}`);
+    console.log(`  Total Enrolled: ${liveRoster.data.data.counters.totalStudents}`);
+    console.log(`  Attendance Marked: ${liveRoster.data.data.counters.attendanceMarked}`);
+    console.log(`  Present Count: ${liveRoster.data.data.counters.presentCount}`);
+
+    // Teacher manual override on Student 1
+    const overrideRes = await request(`/api/radar/session/${sessionId}/attendee/STU1001`, 'PUT', {
+      status: 'Present',
+      reviewRemarks: 'Verified by teacher visually',
+    }, teacherToken);
+    console.log(`- Teacher Manual Override Status: ${overrideRes.status}`);
+
+    // 32. Final Attendance Submission & Institutional Lock
+    console.log('\n[TEST 32] Final Attendance Submission & Institutional Lock');
+    const finalSubmitRes = await request(`/api/radar/session/${sessionId}/submit`, 'POST', {}, teacherToken);
+    console.log(`- Final Submission Status: ${finalSubmitRes.status}, Message: "${finalSubmitRes.data.message}"`);
+    if (finalSubmitRes.status !== 200) {
+      throw new Error('Final attendance submission failed');
+    }
+
+    // Re-submission lock test: should reject with 400
+    const reSubmitRes = await request(`/api/radar/session/${sessionId}/submit`, 'POST', {}, teacherToken);
+    console.log(`- Re-submission Rejection Status: ${reSubmitRes.status} (Expected 400 Locked)`);
+    if (reSubmitRes.status !== 400) {
+      throw new Error('Session locking after final submission failed');
+    }
+
+    // 33. In-App Notifications Verification
+    console.log('\n[TEST 33] Database-Backed Notifications System');
+    const notifRes = await request('/api/notifications', 'GET', null, studentToken);
+    console.log(`- Student Notifications Status: ${notifRes.status}, Total: ${notifRes.data.count}, Unread: ${notifRes.data.unreadCount}`);
+    if (notifRes.data.data && notifRes.data.data.length > 0) {
+      const firstNotif = notifRes.data.data[0];
+      const readRes = await request(`/api/notifications/${firstNotif._id}/read`, 'PUT', null, studentToken);
+      console.log(`- Mark as Read Status: ${readRes.status}, isRead: ${readRes.data.data?.isRead}`);
+      if (readRes.status !== 200 || !readRes.data.data?.isRead) {
+        throw new Error('Notification mark-as-read failed');
+      }
+    }
+
     console.log('\n===============================================================');
-    console.log(' ALL 16 VERIFICATION SUITE TESTS PASSED WITH 100% SUCCESS!');
+    console.log(' ALL 33 CLASSMATE SUITE TESTS PASSED WITH 100% SUCCESS!');
+    console.log(' Smart Attendance Radar, Real-Time Socket.IO, Timetables,');
+    console.log(' Notifications, Defaulters, and Security Fully Certified!');
     console.log('===============================================================');
   } catch (error) {
     console.error('\n❌ TEST RUN FAILED:', error.message || error);

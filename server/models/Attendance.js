@@ -40,6 +40,37 @@ const attendanceSchema = new mongoose.Schema(
       trim: true,
       default: '',
     },
+    division: {
+      type: String,
+      trim: true,
+      uppercase: true,
+      default: 'A',
+    },
+    academicYear: {
+      type: String,
+      trim: true,
+      default: '2026-2027',
+    },
+    editHistory: [
+      {
+        editedBy: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'User',
+        },
+        editedAt: {
+          type: Date,
+          default: Date.now,
+        },
+        previousStatus: String,
+        newStatus: String,
+        previousRemarks: String,
+        newRemarks: String,
+        reason: {
+          type: String,
+          default: 'Attendance correction',
+        },
+      },
+    ],
   },
   {
     timestamps: true,

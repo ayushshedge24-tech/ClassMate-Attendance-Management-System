@@ -138,7 +138,7 @@ const TeacherStudentsPage = () => {
             className="rounded-xl border border-slate-200 px-3 py-2 text-xs text-slate-700 focus:border-indigo-600 focus:outline-none flex-1 md:flex-none"
           >
             <option value="">All Divisions</option>
-            {['A', 'B', 'C'].map((d) => (
+            {['A', 'B', 'C', 'D'].map((d) => (
               <option key={d} value={d}>Division {d}</option>
             ))}
           </select>

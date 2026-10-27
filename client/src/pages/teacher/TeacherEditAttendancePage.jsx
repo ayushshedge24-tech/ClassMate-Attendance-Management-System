@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import api, { getErrorMessage } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
+import Modal from '../../components/Modal';
 import {
   FiEdit3,
   FiCalendar,
@@ -15,6 +16,7 @@ import {
   FiAlertCircle,
   FiRefreshCw,
   FiArrowRight,
+  FiShield,
 } from 'react-icons/fi';
 
 const TeacherEditAttendancePage = () => {
@@ -34,6 +36,9 @@ const TeacherEditAttendancePage = () => {
   const [loadingSubjects, setLoadingSubjects] = useState(true);
   const [loadingRecords, setLoadingRecords] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [correctionReason, setCorrectionReason] = useState('');
+  const [auditRecord, setAuditRecord] = useState(null);
+  const [isAuditOpen, setIsAuditOpen] = useState(false);
 
   const { success, error, info } = useToast();
 
@@ -110,23 +115,28 @@ const TeacherEditAttendancePage = () => {
       return;
     }
 
+    const dirtyRecords = records.filter((r) => r.isDirty);
+    if (dirtyRecords.length === 0) {
+      info('No modifications were made. Toggle status or change remarks to save corrections.');
+      return;
+    }
+
     setSaving(true);
     try {
-      const updatedList = records.map((r) => ({
-        student: r.student?._id || r.student,
-        status: r.status,
-        remarks: r.remarks || '',
-        session: selectedSession,
-      }));
+      // Update each modified record via PUT to record full audit history
+      await Promise.all(
+        dirtyRecords.map((r) =>
+          api.put(`/attendance/${r._id}`, {
+            status: r.status,
+            remarks: r.remarks || '',
+            session: selectedSession,
+            reason: correctionReason || 'Attendance corrected by faculty',
+          })
+        )
+      );
 
-      const res = await api.post('/attendance', {
-        subject: selectedSubject,
-        date: selectedDate,
-        session: selectedSession,
-        records: updatedList,
-      });
-
-      success(res.data.message || 'Attendance records corrected successfully in MongoDB!');
+      success(`Successfully updated ${dirtyRecords.length} attendance record(s) with audit history!`);
+      setCorrectionReason('');
       loadAttendanceRecords();
     } catch (err) {
       error(getErrorMessage(err));
@@ -219,24 +229,39 @@ const TeacherEditAttendancePage = () => {
 
       {/* Actions Bar */}
       {records.length > 0 && (
-        <div className="flex items-center justify-between">
-          <p className="text-xs text-slate-600">
-            Loaded <strong className="text-slate-900">{records.length} student records</strong> for {selectedDate} ({selectedSession})
-          </p>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+          <div className="flex-1 max-w-md">
+            <label className="block text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-1">
+              Revision Reason / Justification <span className="text-slate-400 font-normal">(Recorded in Audit Log)</span>
+            </label>
+            <input
+              type="text"
+              value={correctionReason}
+              onChange={(e) => setCorrectionReason(e.target.value)}
+              placeholder="e.g., Medical leave approved, Proxy attendance rectified..."
+              className="w-full rounded-xl border border-slate-200 px-3 py-1.5 text-xs text-slate-800 focus:border-indigo-600 focus:outline-none"
+            />
+          </div>
 
-          <button
-            type="button"
-            onClick={handleSaveCorrections}
-            disabled={saving}
-            className="flex items-center space-x-2 rounded-xl bg-indigo-600 px-6 py-2.5 text-xs font-bold text-white shadow-md shadow-indigo-600/30 hover:bg-indigo-700 disabled:opacity-50 transition"
-          >
-            {saving ? (
-              <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-            ) : (
-              <FiSave className="h-4 w-4" />
-            )}
-            <span>Save Corrections</span>
-          </button>
+          <div className="flex items-center justify-between sm:justify-end space-x-4">
+            <p className="text-xs text-slate-500">
+              Loaded <strong className="text-slate-900">{records.length} records</strong>
+            </p>
+
+            <button
+              type="button"
+              onClick={handleSaveCorrections}
+              disabled={saving}
+              className="flex items-center space-x-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-xs font-bold text-white shadow-md shadow-indigo-600/30 hover:bg-indigo-700 disabled:opacity-50 transition"
+            >
+              {saving ? (
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+              ) : (
+                <FiSave className="h-4 w-4" />
+              )}
+              <span>Save Corrections</span>
+            </button>
+          </div>
         </div>
       )}
 
@@ -302,8 +327,26 @@ const TeacherEditAttendancePage = () => {
                     <td className="px-6 py-3 font-mono text-slate-600 font-semibold">
                       {rec.student?.studentId}
                     </td>
-                    <td className="px-6 py-3 font-semibold text-slate-800">
-                      {rec.student?.name}
+                    <td className="px-6 py-3">
+                      <div className="font-semibold text-slate-800">
+                        {rec.student?.name}
+                      </div>
+                      {rec.editHistory && rec.editHistory.length > 0 && (
+                        <div className="mt-1">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setAuditRecord(rec);
+                              setIsAuditOpen(true);
+                            }}
+                            className="inline-flex items-center space-x-1 rounded bg-amber-50 border border-amber-200 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 hover:bg-amber-100 transition"
+                            title="View Revision Audit Log"
+                          >
+                            <FiClock className="h-3 w-3" />
+                            <span>Edited ({rec.editHistory.length}x)</span>
+                          </button>
+                        </div>
+                      )}
                     </td>
                     <td className="px-6 py-3 text-center">
                       <div className="inline-flex rounded-xl bg-slate-100 p-1">
@@ -349,6 +392,118 @@ const TeacherEditAttendancePage = () => {
           </table>
         </div>
       </div>
+
+      {/* Audit History Modal */}
+      <Modal
+        isOpen={isAuditOpen}
+        onClose={() => setIsAuditOpen(false)}
+        title="Attendance Record Audit History"
+      >
+        {auditRecord && (
+          <div className="space-y-4">
+            <div className="rounded-xl bg-slate-50 p-3 text-xs space-y-1">
+              <p>
+                <span className="font-semibold text-slate-600">Student:</span>{' '}
+                {auditRecord.student?.name} ({auditRecord.student?.studentId})
+              </p>
+              <p>
+                <span className="font-semibold text-slate-600">Subject:</span>{' '}
+                {subjects.find((s) => s._id === selectedSubject)?.subjectCode} -{' '}
+                {subjects.find((s) => s._id === selectedSubject)?.subjectName}
+              </p>
+              <p>
+                <span className="font-semibold text-slate-600">Date &amp; Session:</span>{' '}
+                {new Date(auditRecord.date).toLocaleDateString()} &mdash; {selectedSession}
+              </p>
+              <p>
+                <span className="font-semibold text-slate-600">Current Status:</span>{' '}
+                <strong
+                  className={
+                    auditRecord.status === 'Present' ? 'text-emerald-600' : 'text-rose-600'
+                  }
+                >
+                  {auditRecord.status}
+                </strong>
+              </p>
+            </div>
+
+            <div>
+              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+                Audit Timeline ({auditRecord.editHistory?.length || 0} revisions)
+              </h4>
+
+              {(!auditRecord.editHistory || auditRecord.editHistory.length === 0) ? (
+                <div className="text-center py-6 text-xs text-slate-400">
+                  No previous revisions logged for this student.
+                </div>
+              ) : (
+                <div className="space-y-3 max-h-72 overflow-y-auto pr-1">
+                  {auditRecord.editHistory
+                    .slice()
+                    .reverse()
+                    .map((item, idx) => (
+                      <div
+                        key={idx}
+                        className="rounded-xl border border-slate-200 bg-white p-3 text-xs shadow-xs space-y-1.5"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="font-semibold text-slate-800">
+                            {item.editedBy?.name || 'Faculty Member'}{' '}
+                            <span className="text-[10px] text-slate-400 font-mono">
+                              ({item.editedBy?.role || 'teacher'})
+                            </span>
+                          </span>
+                          <span className="text-[11px] text-slate-500">
+                            {item.editedAt ? new Date(item.editedAt).toLocaleString() : 'N/A'}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center space-x-2 text-xs">
+                          <span className="text-slate-500">Status change:</span>
+                          <span className="font-semibold text-slate-600 line-through">
+                            {item.previousStatus}
+                          </span>
+                          <span className="text-slate-400">&rarr;</span>
+                          <span
+                            className={`font-bold ${
+                              item.newStatus === 'Present' ? 'text-emerald-600' : 'text-rose-600'
+                            }`}
+                          >
+                            {item.newStatus}
+                          </span>
+                        </div>
+
+                        {item.reason && (
+                          <div className="text-xs text-slate-700 bg-slate-50 rounded-lg p-2 mt-1">
+                            <span className="font-semibold text-slate-500">Reason: </span>
+                            {item.reason}
+                          </div>
+                        )}
+
+                        {item.previousRemarks !== item.newRemarks && (
+                          <p className="text-[11px] text-slate-500 italic">
+                            Remarks: &quot;{item.previousRemarks || 'none'}&quot; &rarr; &quot;
+                            {item.newRemarks || 'none'}&quot;
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end pt-3 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setIsAuditOpen(false)}
+                className="rounded-xl bg-slate-800 px-4 py-2 text-xs font-semibold text-white hover:bg-slate-900"
+              >
+                Close Audit Trail
+              </button>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 };

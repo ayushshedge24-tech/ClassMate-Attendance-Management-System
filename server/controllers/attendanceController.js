@@ -126,7 +126,8 @@ const markAttendance = async (req, res, next) => {
     const populated = await Attendance.findById(attendance._id)
       .populate('student', 'name studentId rollNumber semester division')
       .populate('subject', 'subjectCode subjectName')
-      .populate('markedBy', 'name email');
+      .populate('markedBy', 'name email')
+      .populate('editHistory.editedBy', 'name email role');
 
     res.status(201).json({
       success: true,
@@ -238,6 +239,7 @@ const getAttendanceRecords = async (req, res, next) => {
         },
       })
       .populate('markedBy', 'name email')
+      .populate('editHistory.editedBy', 'name email role')
       .sort({ date: -1, createdAt: -1 })
       .skip(skip)
       .limit(limitNum);
@@ -263,7 +265,8 @@ const getAttendanceById = async (req, res, next) => {
     const record = await Attendance.findById(req.params.id)
       .populate('student', 'studentId name rollNumber semester division')
       .populate('subject', 'subjectCode subjectName teacher')
-      .populate('markedBy', 'name email');
+      .populate('markedBy', 'name email')
+      .populate('editHistory.editedBy', 'name email role');
 
     if (!record) {
       return res.status(404).json({
@@ -307,7 +310,7 @@ const updateAttendance = async (req, res, next) => {
       });
     }
 
-    // Check teacher authorization
+    // Check authorization: Teachers can only edit their subjects, HOD can edit their department's subjects, Admin can edit all
     if (req.userRole === 'teacher' && record.subject?.teacher) {
       if (record.subject.teacher.toString() !== req.user._id.toString()) {
         return res.status(403).json({
@@ -315,8 +318,20 @@ const updateAttendance = async (req, res, next) => {
           message: 'Not authorized to edit attendance for this subject',
         });
       }
+    } else if (req.userRole === 'hod' && record.subject?.department) {
+      if (record.subject.department !== req.user.department) {
+        return res.status(403).json({
+          success: false,
+          message: 'Not authorized to edit attendance for another department',
+        });
+      }
     }
 
+    const previousStatus = record.status;
+    const previousRemarks = record.remarks;
+    const reason = req.body.reason || 'Attendance corrected by faculty';
+
+    let isModified = false;
     if (status) {
       if (!['Present', 'Absent'].includes(status)) {
         return res.status(400).json({
@@ -324,15 +339,32 @@ const updateAttendance = async (req, res, next) => {
           message: 'Status must be Present or Absent',
         });
       }
-      record.status = status;
+      if (status !== previousStatus) {
+        record.status = status;
+        isModified = true;
+      }
     }
 
-    if (remarks !== undefined) {
+    if (remarks !== undefined && remarks.trim() !== previousRemarks) {
       record.remarks = remarks.trim();
+      isModified = true;
     }
 
     if (session) {
       record.session = session.trim();
+    }
+
+    if (isModified) {
+      if (!record.editHistory) record.editHistory = [];
+      record.editHistory.push({
+        editedBy: req.user._id,
+        editedAt: new Date(),
+        previousStatus,
+        newStatus: record.status,
+        previousRemarks,
+        newRemarks: record.remarks,
+        reason,
+      });
     }
 
     record.markedBy = req.user._id;
@@ -342,7 +374,9 @@ const updateAttendance = async (req, res, next) => {
     const updated = await Attendance.findById(record._id)
       .populate('student', 'studentId name rollNumber semester division')
       .populate('subject', 'subjectCode subjectName')
-      .populate('markedBy', 'name email');
+      .populate('markedBy', 'name email')
+      .populate('editHistory.editedBy', 'name email role')
+      .populate('editHistory.editedBy', 'name email role');
 
     res.status(200).json({
       success: true,
@@ -368,12 +402,19 @@ const deleteAttendance = async (req, res, next) => {
       });
     }
 
-    // Check teacher authorization
+    // Check teacher and HOD authorization
     if (req.userRole === 'teacher' && record.subject?.teacher) {
       if (record.subject.teacher.toString() !== req.user._id.toString()) {
         return res.status(403).json({
           success: false,
           message: 'Not authorized to delete attendance for this subject',
+        });
+      }
+    } else if (req.userRole === 'hod' && record.subject?.department) {
+      if (record.subject.department !== req.user.department) {
+        return res.status(403).json({
+          success: false,
+          message: 'Not authorized to delete attendance for another department',
         });
       }
     }
@@ -445,6 +486,7 @@ const getStudentAttendance = async (req, res, next) => {
         },
       })
       .populate('markedBy', 'name email')
+      .populate('editHistory.editedBy', 'name email role')
       .sort({ date: -1, createdAt: -1 });
 
     if (page && limit) {

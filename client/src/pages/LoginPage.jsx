@@ -16,6 +16,7 @@ import {
   FiInfo,
 } from 'react-icons/fi';
 import AboutDeveloperModal from '../components/AboutDeveloperModal';
+import ClassMateLogo from '../components/ClassMateLogo';
 
 const LoginPage = () => {
   const [roleTab, setRoleTab] = useState('staff'); // 'staff' (Admin/Teacher) or 'student'
@@ -34,6 +35,10 @@ const LoginPage = () => {
       setRoleTab('staff');
       setIdentifier('admin@attendance.com');
       setPassword('Admin@123');
+    } else if (type === 'hod') {
+      setRoleTab('staff');
+      setIdentifier('hod.it@attendance.com');
+      setPassword('Hod@123');
     } else if (type === 'teacher') {
       setRoleTab('staff');
       setIdentifier('teacher@attendance.com');
@@ -72,6 +77,8 @@ const LoginPage = () => {
         navigate('/student/dashboard');
       } else if (loggedUser.role === 'teacher') {
         navigate('/teacher/dashboard');
+      } else if (loggedUser.role === 'hod') {
+        navigate('/hod/dashboard');
       } else {
         navigate('/admin/dashboard');
       }
@@ -85,18 +92,11 @@ const LoginPage = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 flex flex-col justify-center py-12 sm:px-6 lg:px-8 px-4">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="flex items-center justify-center space-x-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-600 text-white shadow-xl shadow-indigo-500/25">
-            <FiCheckSquare className="h-7 w-7" />
-          </div>
-          <div>
-            <h2 className="text-2xl font-bold tracking-tight text-white">
-              AMS Portal
-            </h2>
-            <p className="text-xs text-indigo-300 font-medium">
-              College Attendance Management System
-            </p>
-          </div>
+        <div className="flex flex-col items-center justify-center space-y-2">
+          <ClassMateLogo size="xl" variant="light" />
+          <p className="text-xs text-indigo-200/80 font-medium text-center max-w-xs mt-1">
+            Smart College Attendance Management System
+          </p>
         </div>
       </div>
 
@@ -213,7 +213,7 @@ const LoginPage = () => {
             <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 text-center mb-3">
               ⚡ Viva Quick-Fill Demo Credentials
             </p>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               <button
                 type="button"
                 onClick={() => handleDemoFill('admin')}
@@ -221,6 +221,15 @@ const LoginPage = () => {
               >
                 <span className="text-xs font-semibold text-slate-800">Admin</span>
                 <span className="text-[10px] text-slate-500">Admin@123</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleDemoFill('hod')}
+                className="flex flex-col items-center justify-center rounded-xl border border-slate-200 bg-slate-50 p-2 text-center hover:bg-indigo-50 hover:border-indigo-200 transition"
+              >
+                <span className="text-xs font-semibold text-slate-800">HOD (IT)</span>
+                <span className="text-[10px] text-slate-500">Hod@123</span>
               </button>
 
               <button

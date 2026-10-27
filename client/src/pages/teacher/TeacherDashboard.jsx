@@ -16,6 +16,8 @@ import {
   FiArrowRight,
   FiTrendingUp,
   FiCheckCircle,
+  FiRadio,
+  FiMapPin,
 } from 'react-icons/fi';
 import {
   ResponsiveContainer,
@@ -30,12 +32,25 @@ import {
 const TeacherDashboard = () => {
   const { user } = useAuth();
   const [stats, setStats] = useState(null);
+  const [timetable, setTimetable] = useState(null);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState('');
 
   useEffect(() => {
     fetchDashboardStats();
+    fetchTimetable();
   }, []);
+
+  const fetchTimetable = async () => {
+    try {
+      const res = await api.get('/timetable/teacher');
+      if (res.data?.success) {
+        setTimetable(res.data.data);
+      }
+    } catch (err) {
+      // Non-blocking
+    }
+  };
 
   const fetchDashboardStats = async () => {
     setLoading(true);
@@ -102,11 +117,18 @@ const TeacherDashboard = () => {
 
           <div className="flex flex-wrap items-center gap-2 self-start md:self-auto">
             <Link
+              to="/teacher/radar"
+              className="flex items-center space-x-2 rounded-xl bg-gradient-to-r from-cyan-400 to-indigo-600 px-4 py-2.5 text-xs font-black text-slate-950 shadow-lg shadow-cyan-500/25 hover:from-cyan-300 hover:to-indigo-500 hover:scale-105 transition"
+            >
+              <FiRadio className="h-4 w-4 text-slate-950 animate-pulse" />
+              <span>Start Your Radar</span>
+            </Link>
+            <Link
               to="/teacher/mark-attendance"
               className="flex items-center space-x-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-xs font-bold text-white shadow-md shadow-indigo-600/30 hover:bg-indigo-700 transition"
             >
               <FiCheckSquare className="h-4 w-4" />
-              <span>Mark Today's Attendance</span>
+              <span>Manual Mark</span>
             </Link>
             <Link
               to="/teacher/absent-students"
@@ -151,6 +173,80 @@ const TeacherDashboard = () => {
           <span>
             All assigned lecture sessions for today have been recorded and verified!
           </span>
+        </div>
+      )}
+
+      {/* Today's Schedule & Quick Radar Launch Card */}
+      {timetable?.todayLectures?.length > 0 && (
+        <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+            <div>
+              <div className="flex items-center space-x-2">
+                <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
+                  <FiCalendar className="h-3.5 w-3.5" />
+                </span>
+                <h3 className="text-sm font-bold text-slate-900">
+                  Today's Teaching Schedule ({timetable.currentDay})
+                </h3>
+              </div>
+              <p className="text-[11px] text-slate-500 mt-0.5">
+                One-click Smart Radar activation for scheduled lecture slots
+              </p>
+            </div>
+            <Link
+              to="/teacher/timetable"
+              className="flex items-center space-x-1 text-xs font-semibold text-indigo-600 hover:text-indigo-800"
+            >
+              <span>Weekly Routine</span>
+              <FiArrowRight className="h-3.5 w-3.5" />
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mt-4">
+            {timetable.todayLectures.map((slot) => (
+              <div
+                key={slot._id}
+                className="rounded-2xl border border-slate-100 bg-slate-50/70 p-4 hover:border-indigo-200 hover:bg-indigo-50/20 transition flex flex-col justify-between"
+              >
+                <div>
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono text-xs font-bold text-indigo-600">
+                      {slot.startTime} – {slot.endTime}
+                    </span>
+                    <span className="rounded-md bg-indigo-100 px-2 py-0.5 text-[10px] font-semibold text-indigo-700">
+                      Sem {slot.semester} • Div {slot.division}
+                    </span>
+                  </div>
+                  <h4 className="font-bold text-xs text-slate-900 mt-2 truncate">
+                    {slot.subject?.subjectCode} — {slot.subject?.subjectName}
+                  </h4>
+                  <p className="text-[11px] text-slate-500 mt-1 flex items-center space-x-1">
+                    <FiMapPin className="h-3 w-3 text-indigo-500" />
+                    <span>{slot.classroom}</span>
+                  </p>
+                </div>
+
+                <div className="mt-3 pt-3 border-t border-slate-200/60 flex justify-end">
+                  <Link
+                    to="/teacher/radar"
+                    state={{
+                      prefill: {
+                        subjectId: slot.subject?._id,
+                        semester: slot.semester,
+                        division: slot.division,
+                        classroom: slot.classroom,
+                        sessionSlot: `${slot.startTime} - ${slot.endTime}`,
+                      },
+                    }}
+                    className="flex items-center space-x-1.5 rounded-xl bg-indigo-600 px-3 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-indigo-700 transition"
+                  >
+                    <FiRadio className="h-3.5 w-3.5" />
+                    <span>Launch Radar</span>
+                  </Link>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 

@@ -114,6 +114,13 @@ const updateSubject = async (req, res, next) => {
       });
     }
 
+    if (req.userRole === 'hod' && subject.department && subject.department !== req.user.department) {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to modify subjects outside your department.',
+      });
+    }
+
     if (subjectCode && subjectCode.toUpperCase().trim() !== subject.subjectCode) {
       const existing = await Subject.findOne({
         subjectCode: subjectCode.toUpperCase().trim(),
@@ -158,6 +165,13 @@ const deleteSubject = async (req, res, next) => {
       return res.status(404).json({
         success: false,
         message: 'Subject not found',
+      });
+    }
+
+    if (req.userRole === 'hod' && subject.department && subject.department !== req.user.department) {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to delete subjects outside your department.',
       });
     }
 

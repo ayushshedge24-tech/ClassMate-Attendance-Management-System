@@ -21,11 +21,14 @@ const ProtectedRoute = ({ allowedRoles = [] }) => {
   }
 
   if (allowedRoles.length > 0 && !allowedRoles.includes(user?.role)) {
-    // If student tries to visit admin routes, redirect to student dashboard
+    // Role-based redirection if unauthorized
     if (user?.role === 'student') {
       return <Navigate to="/student/dashboard" replace />;
+    } else if (user?.role === 'teacher') {
+      return <Navigate to="/teacher/dashboard" replace />;
+    } else if (user?.role === 'hod') {
+      return <Navigate to="/hod/dashboard" replace />;
     }
-    // If admin/teacher tries to visit student routes, redirect to admin dashboard
     return <Navigate to="/admin/dashboard" replace />;
   }
 

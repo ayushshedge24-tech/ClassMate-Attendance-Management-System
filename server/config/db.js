@@ -9,16 +9,25 @@ const connectDB = async () => {
     // Set strictQuery
     mongoose.set('strictQuery', false);
 
-    // Attempt primary connection with 3-second timeout
+    // Attempt primary connection with 10-second timeout (optimized for cloud databases like Atlas)
     const conn = await mongoose.connect(uri, {
-      serverSelectionTimeoutMS: 3000,
+      serverSelectionTimeoutMS: 10000,
     });
 
     console.log(`[Database] MongoDB Connected to host: ${conn.connection.host}:${conn.connection.port}/${conn.connection.name}`);
     return conn;
   } catch (primaryErr) {
     console.warn(`[Database] Primary MongoDB connection to ${uri} failed: ${primaryErr.message}`);
-    console.log(`[Database] Attempting MongoMemoryServer in-memory fallback...`);
+
+    // Production Safety Guard: Never silently fall back to volatile RAM in production
+    if (process.env.NODE_ENV === 'production' && process.env.ALLOW_IN_MEMORY_DB !== 'true') {
+      console.error(`[Database FATAL] Primary MongoDB connection failed in PRODUCTION mode.`);
+      console.error(`[Database FATAL] Refusing volatile MongoMemoryServer fallback to prevent silent data loss.`);
+      console.error(`[Database FATAL] Please verify your production MONGODB_URI connection string.`);
+      process.exit(1);
+    }
+
+    console.log(`[Database] Attempting MongoMemoryServer in-memory fallback for local development/testing...`);
 
     try {
       const { MongoMemoryServer } = require('mongodb-memory-server');

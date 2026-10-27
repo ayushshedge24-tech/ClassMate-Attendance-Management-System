@@ -14,6 +14,8 @@ import {
   FiCheckCircle,
   FiXCircle,
   FiDownload,
+  FiClock,
+  FiShield,
 } from 'react-icons/fi';
 import { exportToCsv } from '../../utils/exportCsv';
 
@@ -37,9 +39,11 @@ const AttendanceRecordsPage = () => {
   // Modals
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [isAuditOpen, setIsAuditOpen] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState(null);
   const [editStatus, setEditStatus] = useState('Present');
   const [editRemarks, setEditRemarks] = useState('');
+  const [editReason, setEditReason] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   const { success, error } = useToast();
@@ -89,12 +93,18 @@ const AttendanceRecordsPage = () => {
     setSelectedRecord(rec);
     setEditStatus(rec.status);
     setEditRemarks(rec.remarks || '');
+    setEditReason('');
     setIsEditOpen(true);
   };
 
   const handleOpenDelete = (rec) => {
     setSelectedRecord(rec);
     setIsDeleteOpen(true);
+  };
+
+  const handleOpenAudit = (rec) => {
+    setSelectedRecord(rec);
+    setIsAuditOpen(true);
   };
 
   const handleEditSubmit = async (e) => {
@@ -104,8 +114,9 @@ const AttendanceRecordsPage = () => {
       await api.put(`/attendance/${selectedRecord._id}`, {
         status: editStatus,
         remarks: editRemarks,
+        reason: editReason || 'Attendance updated via administration',
       });
-      success('Attendance record updated successfully!');
+      success('Attendance record updated successfully with audit trail!');
       setIsEditOpen(false);
       fetchRecords();
     } catch (err) {
@@ -277,7 +288,7 @@ const AttendanceRecordsPage = () => {
               className="w-full rounded-xl border border-slate-200 px-2.5 py-1.5 text-xs text-slate-700 focus:border-indigo-600 focus:outline-none"
             >
               <option value="">All Divisions</option>
-              {['A', 'B', 'C'].map((d) => (
+              {['A', 'B', 'C', 'D'].map((d) => (
                 <option key={d} value={d}>Division {d}</option>
               ))}
             </select>
@@ -349,20 +360,35 @@ const AttendanceRecordsPage = () => {
                       <p className="text-[11px] text-slate-500 truncate max-w-xs">{rec.subject?.subjectName}</p>
                     </td>
                     <td className="px-6 py-3.5">
-                      <span
-                        className={`inline-flex items-center px-2.5 py-1 rounded-full font-bold text-xs ${
-                          rec.status === 'Present'
-                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                            : 'bg-rose-50 text-rose-700 border border-rose-200'
-                        }`}
-                      >
-                        {rec.status === 'Present' ? (
-                          <FiCheckCircle className="mr-1 h-3.5 w-3.5 text-emerald-600" />
-                        ) : (
-                          <FiXCircle className="mr-1 h-3.5 w-3.5 text-rose-600" />
+                      <div>
+                        <span
+                          className={`inline-flex items-center px-2.5 py-1 rounded-full font-bold text-xs ${
+                            rec.status === 'Present'
+                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                              : 'bg-rose-50 text-rose-700 border border-rose-200'
+                          }`}
+                        >
+                          {rec.status === 'Present' ? (
+                            <FiCheckCircle className="mr-1 h-3.5 w-3.5 text-emerald-600" />
+                          ) : (
+                            <FiXCircle className="mr-1 h-3.5 w-3.5 text-rose-600" />
+                          )}
+                          {rec.status}
+                        </span>
+
+                        {rec.editHistory && rec.editHistory.length > 0 && (
+                          <div className="mt-1">
+                            <button
+                              onClick={() => handleOpenAudit(rec)}
+                              className="inline-flex items-center space-x-1 rounded-md bg-amber-50 border border-amber-200 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 hover:bg-amber-100 transition"
+                              title="Click to view full revision history"
+                            >
+                              <FiClock className="h-3 w-3" />
+                              <span>Edited ({rec.editHistory.length}x)</span>
+                            </button>
+                          </div>
                         )}
-                        {rec.status}
-                      </span>
+                      </div>
                     </td>
                     <td className="px-6 py-3.5 text-slate-500">
                       {rec.markedBy?.name || 'System Staff'}
@@ -472,6 +498,19 @@ const AttendanceRecordsPage = () => {
               />
             </div>
 
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">
+                Reason for Revision <span className="text-slate-400 font-normal">(Audit Trail)</span>
+              </label>
+              <input
+                type="text"
+                placeholder="e.g. Medical certificate approved, Proxy corrected..."
+                value={editReason}
+                onChange={(e) => setEditReason(e.target.value)}
+                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs focus:border-indigo-600 focus:outline-none"
+              />
+            </div>
+
             <div className="flex justify-end space-x-2 pt-3 border-t border-slate-100">
               <button
                 type="button"
@@ -520,6 +559,118 @@ const AttendanceRecordsPage = () => {
             </button>
           </div>
         </div>
+      </Modal>
+
+      {/* Audit History Modal */}
+      <Modal
+        isOpen={isAuditOpen}
+        onClose={() => setIsAuditOpen(false)}
+        title="Attendance Record Audit History"
+      >
+        {selectedRecord && (
+          <div className="space-y-4">
+            <div className="rounded-xl bg-slate-50 p-3 text-xs space-y-1">
+              <p>
+                <span className="font-semibold text-slate-600">Student:</span>{' '}
+                {selectedRecord.student?.name} ({selectedRecord.student?.studentId})
+              </p>
+              <p>
+                <span className="font-semibold text-slate-600">Subject:</span>{' '}
+                {selectedRecord.subject?.subjectCode} - {selectedRecord.subject?.subjectName}
+              </p>
+              <p>
+                <span className="font-semibold text-slate-600">Date &amp; Session:</span>{' '}
+                {new Date(selectedRecord.date).toLocaleDateString()} &mdash;{' '}
+                {selectedRecord.session || 'Lecture 1'}
+              </p>
+              <p>
+                <span className="font-semibold text-slate-600">Current Status:</span>{' '}
+                <strong
+                  className={
+                    selectedRecord.status === 'Present' ? 'text-emerald-600' : 'text-rose-600'
+                  }
+                >
+                  {selectedRecord.status}
+                </strong>
+              </p>
+            </div>
+
+            <div>
+              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+                Revision Log ({selectedRecord.editHistory?.length || 0} entries)
+              </h4>
+
+              {(!selectedRecord.editHistory || selectedRecord.editHistory.length === 0) ? (
+                <div className="text-center py-6 text-xs text-slate-400">
+                  No revisions have been recorded for this attendance record.
+                </div>
+              ) : (
+                <div className="space-y-3 max-h-72 overflow-y-auto pr-1">
+                  {selectedRecord.editHistory
+                    .slice()
+                    .reverse()
+                    .map((item, idx) => (
+                      <div
+                        key={idx}
+                        className="rounded-xl border border-slate-200 bg-white p-3 text-xs shadow-xs space-y-1.5"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="font-semibold text-slate-800">
+                            {item.editedBy?.name || 'Staff Member'}{' '}
+                            <span className="text-[10px] text-slate-400 font-mono">
+                              ({item.editedBy?.role || 'admin'})
+                            </span>
+                          </span>
+                          <span className="text-[11px] text-slate-500">
+                            {item.editedAt ? new Date(item.editedAt).toLocaleString() : 'N/A'}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center space-x-2 text-xs">
+                          <span className="text-slate-500">Status change:</span>
+                          <span className="font-semibold text-slate-600 line-through">
+                            {item.previousStatus}
+                          </span>
+                          <span className="text-slate-400">&rarr;</span>
+                          <span
+                            className={`font-bold ${
+                              item.newStatus === 'Present' ? 'text-emerald-600' : 'text-rose-600'
+                            }`}
+                          >
+                            {item.newStatus}
+                          </span>
+                        </div>
+
+                        {item.reason && (
+                          <div className="text-xs text-slate-700 bg-slate-50 rounded-lg p-2 mt-1">
+                            <span className="font-semibold text-slate-500">Reason: </span>
+                            {item.reason}
+                          </div>
+                        )}
+
+                        {item.previousRemarks !== item.newRemarks && (
+                          <p className="text-[11px] text-slate-500 italic">
+                            Remarks: &quot;{item.previousRemarks || 'none'}&quot; &rarr; &quot;
+                            {item.newRemarks || 'none'}&quot;
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end pt-3 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setIsAuditOpen(false)}
+                className="rounded-xl bg-slate-800 px-4 py-2 text-xs font-semibold text-white hover:bg-slate-900"
+              >
+                Close Audit Trail
+              </button>
+            </div>
+          </div>
+        )}
       </Modal>
     </div>
   );

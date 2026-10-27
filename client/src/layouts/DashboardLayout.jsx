@@ -20,11 +20,18 @@ import {
   FiActivity,
   FiPieChart,
   FiInfo,
+  FiLayers,
+  FiAlertTriangle,
+  FiUserCheck,
+  FiRadio,
 } from 'react-icons/fi';
 import AboutDeveloperModal from '../components/AboutDeveloperModal';
+import ClassMateLogo from '../components/ClassMateLogo';
+import NotificationBell from '../components/NotificationBell';
+import PWAInstallPrompt from '../components/PWAInstallPrompt';
 
 const DashboardLayout = () => {
-  const { user, logout, isStaff, isStudent, isAdmin, isTeacher } = useAuth();
+  const { user, logout, isStaff, isStudent, isAdmin, isHod, isTeacher } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [aboutModalOpen, setAboutModalOpen] = useState(false);
   const navigate = useNavigate();
@@ -37,15 +44,30 @@ const DashboardLayout = () => {
 
   const adminNavLinks = [
     { name: 'Dashboard', path: '/admin/dashboard', icon: FiGrid },
+    { name: 'Programs & Depts', path: '/admin/programs', icon: FiLayers },
+    { name: 'Teacher Assignments', path: '/admin/assignments', icon: FiUserCheck },
+    { name: 'Timetable Scheduler', path: '/admin/timetable', icon: FiCalendar },
     { name: 'Students', path: '/admin/students', icon: FiUsers },
     { name: 'Subjects', path: '/admin/subjects', icon: FiBookOpen },
     { name: 'Mark Attendance', path: '/admin/attendance', icon: FiCheckSquare },
     { name: 'Attendance Records', path: '/admin/attendance-records', icon: FiList },
-    { name: 'Reports', path: '/admin/reports', icon: FiBarChart2 },
+    { name: 'College Reports', path: '/admin/reports', icon: FiBarChart2 },
+  ];
+
+  const hodNavLinks = [
+    { name: 'Dept Dashboard', path: '/hod/dashboard', icon: FiGrid },
+    { name: 'Dept Timetable', path: '/hod/timetable', icon: FiCalendar },
+    { name: 'Dept Students', path: '/hod/students', icon: FiUsers },
+    { name: 'Dept Faculty', path: '/hod/teachers', icon: FiUserCheck },
+    { name: 'Dept Subjects', path: '/hod/subjects', icon: FiBookOpen },
+    { name: 'Defaulters (<75%)', path: '/hod/defaulters', icon: FiAlertTriangle },
+    { name: 'Dept Reports', path: '/hod/reports', icon: FiBarChart2 },
   ];
 
   const teacherNavLinks = [
     { name: 'Dashboard', path: '/teacher/dashboard', icon: FiGrid },
+    { name: 'Radar Studio', path: '/teacher/radar', icon: FiRadio },
+    { name: 'Weekly Timetable', path: '/teacher/timetable', icon: FiCalendar },
     { name: 'My Subjects', path: '/teacher/subjects', icon: FiBookOpen },
     { name: 'Mark Attendance', path: '/teacher/mark-attendance', icon: FiCheckSquare },
     { name: 'Edit Attendance', path: '/teacher/edit-attendance', icon: FiEdit3 },
@@ -57,6 +79,7 @@ const DashboardLayout = () => {
 
   const studentNavLinks = [
     { name: 'Dashboard', path: '/student/dashboard', icon: FiGrid },
+    { name: 'Class Timetable', path: '/student/timetable', icon: FiCalendar },
     { name: 'My Attendance', path: '/student/attendance', icon: FiCalendar },
     { name: 'Subject-wise Attendance', path: '/student/subjects', icon: FiBookOpen },
     { name: 'Monthly Summary', path: '/student/monthly', icon: FiPieChart },
@@ -66,6 +89,8 @@ const DashboardLayout = () => {
   let navLinks = studentNavLinks;
   if (isAdmin) {
     navLinks = adminNavLinks;
+  } else if (isHod) {
+    navLinks = hodNavLinks;
   } else if (isTeacher) {
     navLinks = teacherNavLinks;
   }
@@ -94,20 +119,8 @@ const DashboardLayout = () => {
         }`}
       >
         {/* Brand Header */}
-        <div className="flex h-16 items-center justify-between px-6 border-b border-slate-800">
-          <div className="flex items-center space-x-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-md shadow-indigo-600/30">
-              <FiCheckSquare className="h-6 w-6" />
-            </div>
-            <div>
-              <h1 className="text-base font-bold tracking-tight text-white leading-none">
-                AMS Portal
-              </h1>
-              <p className="text-[11px] font-medium text-slate-400 mt-1">
-                Attendance Management
-              </p>
-            </div>
-          </div>
+        <div className="flex h-16 items-center justify-between px-5 border-b border-slate-800">
+          <ClassMateLogo size="sm" variant="light" />
           <button
             onClick={() => setSidebarOpen(false)}
             className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-800 lg:hidden"
@@ -131,13 +144,15 @@ const DashboardLayout = () => {
                   className={`inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${
                     isAdmin
                       ? 'bg-rose-500/20 text-rose-300'
-                      : isStaff
+                      : isHod
+                      ? 'bg-amber-500/20 text-amber-300'
+                      : isTeacher
                       ? 'bg-indigo-500/20 text-indigo-300'
                       : 'bg-emerald-500/20 text-emerald-300'
                   }`}
                 >
                   <FiShield className="mr-1 h-3 w-3" />
-                  {user?.role || 'User'}
+                  {user?.role === 'hod' ? 'HOD' : user?.role || 'User'}
                 </span>
                 {user?.studentId && (
                   <span className="text-[11px] text-slate-400 font-mono">
@@ -178,6 +193,9 @@ const DashboardLayout = () => {
 
         {/* Sidebar Actions */}
         <div className="p-4 border-t border-slate-800 space-y-2">
+          {/* PWA Install Button for Mobile/Desktop */}
+          <PWAInstallPrompt variant="sidebar" />
+
           <button
             onClick={() => setAboutModalOpen(true)}
             className="flex w-full items-center justify-center space-x-2 rounded-xl bg-slate-950/60 border border-slate-800/80 px-4 py-2 text-xs font-medium text-slate-400 hover:text-white hover:border-slate-700 transition-colors"
@@ -209,19 +227,25 @@ const DashboardLayout = () => {
             </button>
             <div className="hidden sm:flex items-center space-x-2 text-xs text-slate-500">
               <FiClock className="h-4 w-4 text-indigo-500" />
-              <span>Session: Academic Year 2024-2025</span>
+              <span>Session: Academic Year 2026-2027</span>
             </div>
           </div>
 
           <div className="flex items-center space-x-3 sm:space-x-4">
+            {/* PWA Install Button Header Pill */}
+            <PWAInstallPrompt variant="header" />
+
             <button
               onClick={() => setAboutModalOpen(true)}
-              title="About Developer & AMS Project"
+              title="About Developer & ClassMate Project"
               className="hidden sm:flex items-center space-x-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:text-indigo-600 hover:bg-white hover:border-indigo-200 transition shadow-sm"
             >
               <FiInfo className="h-3.5 w-3.5 text-indigo-500" />
               <span>About Developer</span>
             </button>
+
+            {/* Notification Bell Component */}
+            <NotificationBell />
 
             <div className="flex items-center space-x-2 rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-600">
               <FiCalendar className="h-3.5 w-3.5 text-slate-500" />
@@ -236,7 +260,7 @@ const DashboardLayout = () => {
                   {user?.name}
                 </p>
                 <p className="text-[11px] text-slate-500 capitalize">
-                  {user?.role === 'student' ? `${user?.course} (${user?.semester}-${user?.division})` : user?.email}
+                  {user?.role === 'student' ? `${user?.course} (${user?.semester}-${user?.division})` : user?.role === 'hod' ? `HOD • ${user?.department}` : user?.email}
                 </p>
               </div>
               <div className="flex h-9 w-9 items-center justify-center rounded-full bg-indigo-100 text-indigo-700 font-bold text-sm border border-indigo-200">

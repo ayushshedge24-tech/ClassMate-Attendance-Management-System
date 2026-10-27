@@ -1,487 +1,320 @@
-# Attendance Management System (AMS) — MERN
+# ClassMate — Smart College Attendance Management System
 
-A modern, full-stack **College Attendance Management System** engineered with the **MERN** stack (MongoDB, Express.js, React.js, and Node.js). Features role-segregated portals for **Administrators**, **Faculty Teachers**, and **Students**, automated attendance percentage calculations, shortage alerts, and CSV data export for academic evaluation.
+**ClassMate** is an enterprise-grade, full-stack **Smart College Attendance Management System** engineered with the **MERN** stack (MongoDB, Express.js, React.js, Node.js), real-time **Socket.IO** WebSockets, and **Progressive Web App (PWA)** capabilities.
+
+ClassMate delivers modern, role-segregated portals for **Main Administrators**, **Department Admins / HODs**, **Faculty Teachers**, and **Students**. Key innovations include the **Smart Attendance Radar**, collision-preventing **Timetable System**, persistent **In-App Notifications**, automated 75% target recovery calculations, attendance revision audit trails, multi-division class scheduling (Divisions A–D), Excel-compatible CSV exports, and offline-capable mobile/desktop PWA installation.
 
 ---
 
-## 1. Project Title & Overview
+## 1. Project Overview & Quick Reference
 
-- **Project Name:** Attendance Management System (AMS) — MERN
-- **Repository Name:** `attendance-management-system-mern`
-- **Application URL:** [http://localhost:5000](http://localhost:5000)
+- **Product Name:** **ClassMate**
+- **Tagline:** Smart College Attendance Management System
+- **Repository:** `attendance-management-system-mern`
+- **Architecture:** Unified Single-Port MERN + Socket.IO WebSockets
+- **Local Application URL:** [http://localhost:5000](http://localhost:5000)
 - **API Base:** [http://localhost:5000/api](http://localhost:5000/api)
 - **Health Check:** [http://localhost:5000/api/health](http://localhost:5000/api/health)
-
-In higher-education institutions, traditional paper-based attendance registers are time-intensive, prone to discrepancies, and restrict real-time academic visibility. The **MERN Attendance Management System** delivers a centralized, role-based platform that replaces manual roll-calling with automated attendance logging, dynamic percentage calculation, shortage monitoring, and faculty reporting.
+- **PWA Manifest:** [http://localhost:5000/manifest.webmanifest](http://localhost:5000/manifest.webmanifest)
+- **Vite Dev Server (HMR):** [http://localhost:5173](http://localhost:5173)
 
 ---
 
-## 2. Developer Attribution
+## 2. Developer Attribution & Academic Context
 
 - **Developer:** **Ayush Shedge**
-- **Degree:** B.Sc. Information Technology
-- **College:** Vidyalankar School of Information Technology, Mumbai
-- **Expected Graduation:** 2027
-- **Career Goal:** Aspiring Data Analyst
+- **Degree Program:** Bachelor of Science in Information Technology (B.Sc. IT)
+- **Institution:** Vidyalankar School of Information Technology, Mumbai (Class of 2027)
+- **Career Focus:** Aspiring Data Analyst & Full-Stack Developer
 - **GitHub:** [https://github.com/ayushshedge24-tech](https://github.com/ayushshedge24-tech)
 - **LinkedIn:** [https://linkedin.com/in/ayush-shedge-analytics](https://linkedin.com/in/ayush-shedge-analytics)
+- **Project Scope:** Academic Evaluation, Viva Demonstration & Portfolio Showcase
 
 ---
 
-## 3. Academic Details
+## 3. Core System Highlights
 
-- **Academic Institution:** Vidyalankar School of Information Technology, Mumbai
-- **Department:** Department of Information Technology
-- **Program:** Bachelor of Science in Information Technology (B.Sc. IT)
-- **Class/Cohort:** Class of 2027
-- **Academic Project Scope:** Final Academic Mini-Project & Technical Portfolio Demonstration
+```
+┌────────────────────────────────────────────────────────────────────────┐
+│                        ClassMate Core Architecture                     │
+├───────────────────┬────────────────────┬─────────────────┬─────────────┤
+│ 1. Admin Portal   │ 2. HOD Portal      │ 3. Teacher Hub  │ 4. Student  │
+│ • Stats & Roster  │ • IT Dept Scoped   │ • Radar Studio  │ • Attendance│
+│ • Program & Depts │ • Defaulter Alerts │ • Live Roster   │ • Timetable │
+│ • Timetable Admin │ • Faculty Reports  │ • Manual Review │ • 75% Target│
+└───────────────────┴────────────────────┴─────────────────┴─────────────┘
+                                   │
+         ┌─────────────────────────┼─────────────────────────┐
+         ▼                         ▼                         ▼
+┌──────────────────┐     ┌──────────────────┐     ┌──────────────────┐
+│  Smart Attendance│     │ Dynamic Academic │     │ Progressive Web  │
+│      Radar       │     │    Timetables    │     │    App (PWA)     │
+├──────────────────┤     ├──────────────────┤     ├──────────────────┤
+│• "Start Radar"   │     │• Weekly schedules│     │• Android install │
+│• Socket.IO sync  │     │• Room collisions │     │• Desktop install │
+│• W3C Geofencing  │     │• Faculty clashes │     │• Shell caching   │
+│• Final submission│     │• Class collisions│     │• 0 API leaks     │
+└──────────────────┘     └──────────────────┘     └──────────────────┘
+```
 
----
+### 📡 Smart Attendance Radar Workflow
+1. **Teacher Launches Session ("Start Your Radar"):**
+   - The teacher selects an assigned subject, division, room, and session duration.
+   - Generates a cryptographically randomized 6-character beacon code (`RAD-XXXXXX`) with an active countdown timer.
+   - Real-time event `radar_session_started` is broadcast via Socket.IO to enrolled students.
+2. **Student Submits Attendance ("Mark Your Attendance"):**
+   - The student dashboard widget pulses actively when a lecture radar is detected.
+   - Prompts for browser geolocation; validates latitude/longitude within configured classroom radius (default 100m) using the spherical Haversine formula.
+   - Prevents duplicate submissions via compound indexing and session locking.
+3. **Live Teacher Roster Updates (Zero Polling):**
+   - Submissions trigger `attendance_marked_live` over Socket.IO.
+   - The teacher's radar studio roster increments counters (Present, Absent, Requires Review) and marks rows in real time without page reload.
+4. **Manual Teacher Override & Institutional Lock:**
+   - Teachers retain full authority to manually correct student status and enter review notes.
+   - Clicking **"Submit Attendance to College Database"** writes permanent records to the `Attendance` collection with immutable audit logs and permanently locks the session against re-submission.
 
-## 4. Project Objectives
+### 🗓️ Academic Timetable Engine & Collision Prevention
+- Prevents **Teacher Double-Booking** (faculty cannot be scheduled in two classrooms concurrently).
+- Prevents **Classroom Collisions** (two classes cannot occupy the same lecture hall at the same time).
+- Prevents **Division Clashes** (students in the same division cannot have overlapping lecture slots).
 
-1. **Eliminate Manual Attendance Overhead:** Provide faculty with rapid, one-click batch attendance marking.
-2. **Role-Segregated Dashboards:** Deliver tailored workflows for Institutional Administrators, Faculty Teachers, and Enrolled Students.
-3. **Transparent Academic Tracking:** Enable students to monitor personal attendance rates, verify lecture dates, and track subject-level percentages.
-4. **Automated Shortage Detection:** Alert students and faculty when attendance falls below the mandatory 75% institutional threshold.
-5. **Data Analytics & Export:** Equip faculty and administrators with attendance trend charts and Excel-compatible CSV exports.
-6. **Data Security & Privacy:** Strictly isolate student records so students cannot view other students' private attendance logs.
+### 📲 Progressive Web App (PWA) Ready
+- Fully installable on **Android Chrome**, **Desktop Chrome/Edge**, and **iOS Safari**.
+- Custom application icons (`192x192`, `512x512`, `maskable`, `apple-touch-icon`, and scalable `SVG`).
+- **Privacy-First Service Worker:** Caches only static shell assets (HTML, CSS, JS, fonts). **Strictly bypasses all `/api/*` endpoints, WebSockets, and non-GET requests** to ensure zero private student or attendance data is cached.
 
----
+### 🎯 75% Attendance Target Recovery Formula
+For any student below the university mandatory 75% threshold, ClassMate derives the exact number of consecutive lectures $x$ required to restore compliance:
 
-## 5. Main Features
-
-- 🔐 **Role-Based Access Control (RBAC):** Distinct route guards and authorization middleware for Admin, Teacher, and Student roles.
-- ⚡ **Batch Attendance Marking:** Mark an entire classroom as Present/Absent with a single click and submit via bulk database operations.
-- 🔄 **Attendance Corrections & Auditing:** Authorized teachers and administrators can edit previously submitted records without duplicate collisions.
-- 📊 **Visual Analytics:** Interactive Recharts charts (Daily Attendance Trend, Donut Status Distribution, and Subject Comparison Bars).
-- 📥 **Excel-Compatible CSV Export:** One-click download of attendance logs, student summaries, and defaulter registers with UTF-8 BOM encoding.
-- ⚠️ **Defaulter & Shortage Warning System:** Color-coded status badges (`Eligible` ≥ 75%, `Warning` 60–74%, `Defaulter` < 60%) and projected classes needed to regularize attendance.
-- 📱 **Responsive UI:** Modern layout built with Tailwind CSS, supporting mobile, tablet, and desktop viewports.
-
----
-
-## 6. Role Capabilities
-
-### 👨‍💼 Administrator Portal
-- **System Overview:** Total students, total curriculum subjects, today's attendance metrics, and college-wide average attendance.
-- **Student Management (CRUD):** Add, view, search, edit, and delete student records with semester and division filters.
-- **Subject Management (CRUD):** Add, edit, and assign curriculum courses to faculty members.
-- **Attendance Management:** View all system attendance logs, perform manual overrides, and export historical logs to CSV.
-- **Analytics & Reports:** Consolidated student-wise and subject-wise reports with printable layouts and CSV download.
-
-### 👩‍🏫 Faculty Teacher Portal
-- **Faculty Dashboard:** Live metrics on assigned subjects, enrolled students, sessions conducted today, and pending sessions.
-- **Assigned Subjects:** Filter and monitor courses assigned specifically to the logged-in teacher.
-- **Mark Attendance:** Select subject, lecture session, date, and semester/division to mark student rosters with *Mark All Present* / *Mark All Absent* shortcuts.
-- **Edit Attendance:** Retrieve previously submitted dates and update individual student statuses with faculty remarks.
-- **Absentee & Defaulter Tracking:** Identify daily absentees and view chronic defaulters with required attendance calculations.
-- **Faculty Reports:** Daily session breakdown, subject-level averages, monthly audit summaries, and CSV exports.
-
-### 🎓 Student Portal
-- **Personal Dashboard:** Real-time personal attendance percentage, total classes conducted, classes attended, classes missed, and enrolled subjects.
-- **Shortage Alert Banner:** Prominent notification if overall attendance falls below the required 75% threshold.
-- **Subject Breakdown:** Subject-wise breakdown showing conducted, attended, and absent counts with status badges.
-- **Day-Wise History Ledger:** Chronological record of every lecture session showing exact date, day of week, subject code, lecture session, and status (Present/Absent).
-- **Date & Subject Filtering:** Filter personal attendance history by curriculum course, calendar month, or custom date range.
-- **Monthly Summary:** Month-by-month attendance breakdown with monthly attendance percentage.
-- **Personal Profile:** Display enrolled degree program, semester, division, roll number, and official student email.
+$$\text{Needed Consecutive Classes} = \max\left(0, \lceil 3 \times \text{Total} - 4 \times \text{Present} \rceil\right)$$
 
 ---
 
-## 7. Technology Stack
+## 4. Technical Architecture & Technology Stack
 
 ### Frontend Architecture
-- **Library/Framework:** React.js (v18.3)
-- **Build Tool:** Vite (v6.1)
+- **Library / Framework:** React 18 (v18.3)
+- **Bundler:** Vite (v6.1)
 - **Styling:** Tailwind CSS (v3.4) with PostCSS and Autoprefixer
-- **Routing:** React Router DOM (v6.28) with nested layouts and protected route guards
-- **State Management:** React Context API (`AuthContext`, `ToastContext`)
-- **Data Visualization:** Recharts (v2.15) for interactive responsive charts
+- **Routing:** React Router DOM (v6.28) with nested layouts and protected RBAC guards
+- **Real-Time Client:** Socket.IO Client (v4.8)
+- **Charts:** Recharts (v2.15) for responsive compliance and distribution charts
 - **Icons:** React Icons (`react-icons/fi`) and Lucide React
-- **HTTP Client:** Axios (v1.7) with request/response interceptors for automatic JWT attachment
+- **HTTP Client:** Axios (v1.7) with request/response JWT interceptors
 
 ### Backend Architecture
-- **Runtime:** Node.js (v24.19)
+- **Runtime:** Node.js (v24.19 / v18+ compatible)
 - **Framework:** Express.js (v4.21)
-- **Database:** MongoDB Community Server (v8.0)
-- **Object Data Modeling:** Mongoose (v8.9) with schema validation, indexes, and hooks
-- **Authentication:** JSON Web Tokens (`jsonwebtoken` v9.0)
-- **Password Security:** Salted hashing with `bcryptjs` (10 rounds)
-- **Cross-Origin Handling:** CORS middleware (`cors` v2.8)
-- **Environment Management:** `dotenv` (v16.4)
+- **Real-Time Engine:** Socket.IO (v4.8) bound to `http.createServer(app)`
+- **Database:** MongoDB Community Server (v8.0) / MongoDB Atlas (Cloud)
+- **ODM:** Mongoose (v8.9) with compound unique indexes and strict validation
+- **Authentication:** JSON Web Tokens (`jsonwebtoken` v9.0) with salted `bcryptjs` hashing (10 rounds)
+- **Security Middleware:** Rate limiting (`express-rate-limit`), security headers (`nosniff`, `SAMEORIGIN`, `XSS-Protection`), CORS origin filtering
 
 ---
 
-## 8. System Architecture Diagram
-
-```
-+---------------------------------------------------------------------------------+
-|                                 CLIENT LAYER                                    |
-|              React 18 + Vite + Tailwind CSS + React Router + Recharts           |
-|                                                                                 |
-|   +-----------------------+  +-----------------------+  +-------------------+   |
-|   |   Student Dashboard   |  |   Teacher Dashboard   |  |  Admin Dashboard  |   |
-|   +-----------------------+  +-----------------------+  +-------------------+   |
-+---------------------------------------------------------------------------------+
-                                         |
-                            HTTP / REST with Bearer JWT
-                                         |
-+---------------------------------------------------------------------------------+
-|                                 SERVER LAYER                                    |
-|                             Node.js + Express.js                                |
-|                                                                                 |
-|   +------------------------+  +-----------------------+  +------------------+   |
-|   | authMiddleware (JWT)   |  | roleMiddleware (RBAC)|  | errorMiddleware  |   |
-|   +------------------------+  +-----------------------+  +------------------+   |
-|                                                                                 |
-|   Routes: /api/auth, /api/students, /api/subjects, /api/attendance, /api/teacher|
-+---------------------------------------------------------------------------------+
-                                         |
-                               Mongoose ODM (v8)
-                                         |
-+---------------------------------------------------------------------------------+
-|                                DATABASE LAYER                                   |
-|                           MongoDB Community Server                              |
-|                                                                                 |
-|   Collections: users (2) | students (20) | subjects (5) | attendances (1,003+)  |
-+---------------------------------------------------------------------------------+
-```
-
----
-
-## 9. Project Folder Structure
+## 5. Project Folder Structure
 
 ```
 attendance-management-system/
-├── .env.example                     # Root environment template (placeholders)
-├── .gitignore                       # Git exclusion rules (.env, node_modules, dist)
+├── .env.example                     # Environment configuration template (safe placeholders)
+├── .gitignore                       # Git exclusion rules (.env, node_modules, client/dist)
 ├── package.json                     # Root scripts (build, start, dev:watch)
-├── README.md                        # Documentation and project portfolio guide
-├── client/                          # Frontend React + Vite Application
-│   ├── index.html                   # HTML entry point
+├── README.md                        # Primary project documentation
+├── docs/                            # Complete Technical Documentation Suite
+│   ├── SRS.md                       # Software Requirements Specification
+│   ├── SDD.md                       # Software Design Document
+│   ├── DATABASE_DESIGN.md           # MongoDB Schemas, ERD & Compound Indexes
+│   ├── API_DOCUMENTATION.md         # Full REST API Endpoint Catalog & Permissions
+│   ├── ARCHITECTURE.md              # System Architecture & Mermaid Diagrams
+│   ├── TESTING.md                   # QA Testing Report & Test Case Catalog
+│   ├── USER_MANUAL.md               # User Manual for Admin, HOD, Teacher, Student
+│   ├── INSTALLATION_GUIDE.md        # Local Setup & MongoDB Instructions
+│   ├── PROJECT_REPORT.md            # University Standard Mini-Project Report
+│   └── TRACEABILITY_MATRIX.md       # Requirements to Implementation Mapping
+├── client/                          # Frontend React + Vite SPA
+│   ├── index.html                   # HTML entry point with PWA meta tags & icons
 │   ├── package.json                 # Client dependencies & scripts
-│   ├── tailwind.config.js           # Tailwind design tokens
-│   ├── vite.config.js               # Vite bundler configuration
+│   ├── vite.config.js               # Vite bundler & API proxy configuration
+│   ├── public/                      # Static PWA Assets
+│   │   ├── manifest.webmanifest     # Web App Manifest (standalone, theme_color)
+│   │   ├── sw.js                    # Service Worker (static shell caching, 0 API leaks)
+│   │   └── icons/                   # PWA Icons (192px, 512px, maskable, apple-touch, SVG)
 │   └── src/
-│       ├── App.jsx                  # Main router configuration & route guards
-│       ├── main.jsx                 # React root mount
-│       ├── index.css                # Global Tailwind CSS directives
-│       ├── components/              # Reusable UI components
-│       │   ├── AboutDeveloperModal.jsx  # Developer profile modal (Ayush Shedge)
-│       │   ├── Modal.jsx            # Reusable accessible dialog modal
-│       │   ├── ProgressBar.jsx      # Color-coded attendance progress bar
-│       │   ├── ProtectedRoute.jsx   # Role-based route authorization guard
-│       │   └── StatCard.jsx         # KPI summary card
-│       ├── context/                 # Context providers
-│       │   ├── AuthContext.jsx      # Authentication state and login/logout handlers
-│       │   └── ToastContext.jsx     # Global notification toast provider
+│       ├── App.jsx                  # React Router routes & 4-role protected routes
+│       ├── main.jsx                 # React root mount & Service Worker registration
+│       ├── components/              # Reusable UI & Widget Components
+│       │   ├── ClassMateLogo.jsx    # SVG branding logo with radar rings
+│       │   ├── NotificationBell.jsx # Database-backed notification bell with unread badge
+│       │   ├── PWAInstallPrompt.jsx # Native one-click install button for PWA
+│       │   ├── StudentRadarWidget.jsx # Student active radar beacon & mark dialog
+│       │   ├── StudentTimetableWidget.jsx # Student schedule widget
+│       │   ├── ProtectedRoute.jsx   # Role-based route guard
+│       │   └── StatCard.jsx         # Summary KPI card
 │       ├── layouts/
-│       │   └── DashboardLayout.jsx  # Responsive layout, sidebar, header, footer
+│       │   └── DashboardLayout.jsx  # Glassmorphic sidebar layout with role adaptation
 │       ├── pages/
-│       │   ├── LoginPage.jsx        # Login page with demo credentials
-│       │   ├── admin/               # Administrator pages
-│       │   │   ├── AdminDashboard.jsx
-│       │   │   ├── AttendanceRecordsPage.jsx
-│       │   │   ├── MarkAttendancePage.jsx
-│       │   │   ├── ReportsPage.jsx
-│       │   │   ├── StudentsPage.jsx
-│       │   │   └── SubjectsPage.jsx
-│       │   ├── teacher/             # Faculty Teacher pages
-│       │   │   ├── TeacherAbsentStudentsPage.jsx
-│       │   │   ├── TeacherAttendanceHistoryPage.jsx
-│       │   │   ├── TeacherDashboard.jsx
-│       │   │   ├── TeacherEditAttendancePage.jsx
-│       │   │   ├── TeacherMarkAttendancePage.jsx
-│       │   │   ├── TeacherReportsPage.jsx
-│       │   │   ├── TeacherStudentsPage.jsx
-│       │   │   └── TeacherSubjectsPage.jsx
-│       │   └── student/             # Student portal pages
-│       │       ├── StudentAttendanceHistory.jsx
-│       │       ├── StudentDashboard.jsx
-│       │       ├── StudentMonthlySummary.jsx
-│       │       ├── StudentProfile.jsx
-│       │       └── StudentSubjectAttendance.jsx
-│       ├── services/
-│       │   └── api.js               # Axios instance with JWT interceptors
-│       └── utils/
-│           └── exportCsv.js         # Excel-compatible CSV export helper
-└── server/                          # Backend Express REST API
+│       │   ├── LoginPage.jsx        # Login page with 1-click viva credentials
+│       │   ├── admin/               # Admin pages (Dashboard, Programs, Timetable, etc.)
+│       │   ├── hod/                 # HOD pages (Dept Dashboard, Faculty, Defaulters, etc.)
+│       │   ├── teacher/             # Teacher pages (Radar Studio, Timetable, Mark, Reports)
+│       │   └── student/             # Student pages (Dashboard, Timetable, History)
+│       └── services/
+│           ├── api.js               # Axios instance with Bearer JWT interceptors
+│           └── socket.js            # Socket.IO client singleton
+└── server/                          # Backend Express REST API & WebSockets
     ├── .env                         # Server environment configuration (ignored by Git)
-    ├── .env.example                 # Safe environment configuration template
-    ├── package.json                 # Backend dependencies & scripts
-    ├── server.js                    # Express app initialization & static SPA serving
-    ├── test_api.js                  # Automated 16-step E2E verification suite
+    ├── .env.example                 # Safe server environment template
+    ├── package.json                 # Server dependencies & scripts
+    ├── server.js                    # Express app initialization, Socket.IO, static SPA serving
+    ├── socket.js                    # Socket.IO room manager (session & user channels)
     ├── config/
-    │   └── db.js                    # MongoDB Mongoose connection handler
+    │   └── db.js                    # Mongoose connection with Atlas 10s timeout & memory guard
     ├── controllers/
-    │   ├── attendanceController.js  # Attendance marking, history, and summaries
-    │   ├── authController.js        # Authentication & teacher directory
-    │   ├── dashboardController.js   # Admin analytics & Recharts chart datasets
-    │   ├── studentController.js     # Student management CRUD
-    │   ├── subjectController.js     # Subject management CRUD
-    │   └── teacherController.js     # Faculty statistics, absent students, & reports
-    ├── middleware/
-    │   ├── authMiddleware.js        # JWT verification middleware
-    │   ├── errorMiddleware.js       # 404 & centralized error handler
-    │   └── roleMiddleware.js        # RBAC permission enforcer
+    │   ├── radarController.js       # Smart Attendance Radar engine & geofence validation
+    │   ├── timetableController.js   # Timetable scheduler & 3-tier collision prevention
+    │   ├── notificationController.js# In-app notifications & unread counters
+    │   ├── attendanceController.js  # Attendance marking, history, audits, and summaries
+    │   ├── authController.js        # Authentication & staff directory
+    │   ├── hodController.js         # Scoped HOD analytics & defaulter tracking
+    │   └── subjectController.js     # Subject management
     ├── models/
-    │   ├── Attendance.js            # Attendance schema with unique compound index
-    │   ├── Student.js               # Student schema with password hashing
-    │   ├── Subject.js               # Subject schema with faculty assignment
-    │   └── User.js                  # Staff user schema (Admin & Teacher)
-    ├── routes/
-    │   ├── attendanceRoutes.js
-    │   ├── authRoutes.js
-    │   ├── dashboardRoutes.js
-    │   ├── studentRoutes.js
-    │   ├── subjectRoutes.js
-    │   └── teacherRoutes.js
-    ├── services/
-    │   └── attendanceService.js     # Date normalization & mathematical calculations
-    └── utils/
-        ├── generateToken.js         # JWT signing utility
-        └── seedData.js              # Initial demo data seeder (bypassed if db populated)
+    │   ├── Attendance.js            # Attendance records with embedded editHistory audit
+    │   ├── AttendanceSession.js     # Live Radar sessions with attendees & geofence bounds
+    │   ├── Timetable.js             # Academic timetable slots with collision indexes
+    │   ├── Notification.js          # Persistent user notifications
+    │   ├── User.js                  # Staff accounts (Admin, HOD, Teacher)
+    │   ├── Student.js               # Student accounts
+    │   ├── Subject.js               # Curriculum courses
+    │   ├── Department.js            # College departments
+    │   └── Program.js               # Degree programs (Divisions A–D)
+    └── routes/                      # Express route endpoints
 ```
 
 ---
 
-## 10. Database Schema Overview
+## 6. Installation & Local Setup
 
-The system uses four collections in the `attendance_db` MongoDB database:
-
-### 1. `users` (Staff Collection)
-Stores administrative staff and faculty members:
-- `name` (String, required): Full name
-- `email` (String, required, unique): Work email address
-- `password` (String, select: false): 10-round bcrypt salted hash
-- `role` (String, enum: `['admin', 'teacher']`): System permission tier
-- `department` (String): Academic department
-
-### 2. `students` (Student Collection)
-Stores student academic profiles and credentials:
-- `studentId` (String, required, unique, uppercase): Official ID (e.g., `STU1001`)
-- `name` (String, required): Student full name
-- `email` (String, required, unique): Official college email
-- `phone` (String): Contact phone number
-- `course` (String): Program of study (e.g., `B.Tech Computer Science`)
-- `semester` (Number, 1–8): Enrolled semester
-- `division` (String): Class division (e.g., `A`, `B`)
-- `rollNumber` (Number, required): Class roll number
-- `password` (String, select: false): 10-round bcrypt salted hash
-- `role` (String, default: `'student'`): Immutable student role identifier
-
-### 3. `subjects` (Curriculum Courses)
-Stores course information and faculty assignment:
-- `subjectCode` (String, required, unique, uppercase): Course code (e.g., `IT301`)
-- `subjectName` (String, required): Descriptive title
-- `semester` (Number, 1–8): Program semester
-- `department` (String): Department offering the course
-- `teacher` (ObjectId, ref: `'User'`): Assigned faculty member
-
-### 4. `attendances` (Instructional Session Records)
-Stores individual student attendance per lecture:
-- `student` (ObjectId, ref: `'Student'`, required): Student reference
-- `subject` (ObjectId, ref: `'Subject'`, required): Subject reference
-- `date` (Date, required): Normalized UTC date
-- `session` (String, default: `'Lecture 1'`): Lecture or laboratory session
-- `status` (String, enum: `['Present', 'Absent']`): Attendance mark
-- `markedBy` (ObjectId, ref: `'User'`): Faculty or Admin who logged the record
-- `remarks` (String): Faculty remarks or medical excuse notes
-
-**Database Constraints & Indexes:**
-- Unique compound index: `{ student: 1, subject: 1, date: 1, session: 1 }` prevents duplicate marking collisions for the same student in the same lecture.
-- Query optimization indexes on `{ subject: 1, date: -1 }`, `{ student: 1, date: -1 }`, and `{ date: -1 }`.
-
----
-
-## 11. Attendance Calculation Formula
-
-All statistics across student dashboards and teacher reports are calculated dynamically using the standard academic formula:
-
-$$\text{Attendance Percentage} = \left(\frac{\text{Present Classes}}{\text{Total Conducted Classes}}\right) \times 100$$
-
-### Implementation Rules:
-- **Zero-Safe Division:** If `Total Conducted Classes === 0`, the percentage is safely reported as `0%` rather than returning `NaN` or crashing.
-- **Exclusion of Unrecorded Dates:** Missing or unscheduled dates are never counted as absences. Percentages reflect only actual recorded instructional sessions.
-- **Consistent Rounding:** Percentages are rounded to one decimal place (`Number.prototype.toFixed(1)`).
-- **Eligibility Classification:**
-  - 🟢 **Eligible:** $\ge 75\%$ (Meets university exam threshold)
-  - 🟡 **Warning:** $60\% \le \text{Attendance} < 75\%$ (Shortage alert issued)
-  - 🔴 **Defaulter:** $< 60\%$ (Critical attendance shortage)
-
----
-
-## 12. Installation Prerequisites
-
+### Prerequisites
 - **Node.js:** v18.0.0 or higher ([Download Node.js](https://nodejs.org/))
 - **npm:** v9.0.0 or higher (packaged with Node.js)
-- **MongoDB:** MongoDB Community Server (v6.0 or higher) running locally on port `27017`
+- **MongoDB:** MongoDB Community Server running locally on port `27017`
 
----
+### Step 1: Clone Repository & Install Dependencies
+```bash
+git clone https://github.com/ayushshedge24-tech/attendance-management-system-mern.git
+cd attendance-management-system-mern
 
-## 13. MongoDB Local Setup
-
-Ensure your local MongoDB Community Server is running. In Windows PowerShell:
-
-```powershell
-# Check if MongoDB service is active
-Get-Service -Name MongoDB
-
-# If stopped, start the service
-Start-Service -Name MongoDB
+# Install root, server, and client dependencies
+npm run install-all
 ```
 
-The database `attendance_db` is accessed locally at:
-```
-mongodb://127.0.0.1:27017/attendance_db
-```
-
----
-
-## 14. Environment Variable Configuration
-
-Create a file named `.env` inside the `server/` directory using the provided safe placeholder template:
-
+### Step 2: Environment Configuration
+Create a `.env` file inside `server/` (or copy from `server/.env.example`):
 ```env
 PORT=5000
 MONGODB_URI=mongodb://127.0.0.1:27017/attendance_db
-JWT_SECRET=your_jwt_secret_key_here
+JWT_SECRET=your_long_random_jwt_secret_key_here
 JWT_EXPIRE=7d
 NODE_ENV=development
+CORS_ORIGIN=*
 ```
 
-> **Security Note:** Never commit `.env` files to Git. The `.gitignore` file is configured to exclude all `.env` files and nested environment configurations.
+### Step 3: Run the Application
 
----
-
-## 15. Run Commands
-
-### Option A: Unified Production Mode (Recommended)
-Builds the Vite frontend and serves both the React application and Express API on a single port:
-
-```powershell
-# From the project root:
+#### Option A: Unified Single-Port Mode (Recommended — Mirrors Production)
+Builds the client and serves both the React application, API, and Socket.IO on port 5000:
+```bash
 npm run build
 npm start
 ```
-- **Web Application & API:** [http://localhost:5000](http://localhost:5000)
-- **Health Endpoint:** [http://localhost:5000/api/health](http://localhost:5000/api/health)
+- Open: [http://localhost:5000](http://localhost:5000)
 
-### Option B: Concurrent Development Mode
+#### Option B: Concurrent Development Mode
 Runs the backend with auto-reload and the Vite frontend with Hot Module Replacement (HMR):
-
-```powershell
-# From the project root:
+```bash
 npm run dev:watch
 ```
-- **React UI (Vite Dev Server):** [http://localhost:5173](http://localhost:5173)
-- **Express Backend API:** [http://localhost:5000](http://localhost:5000)
+- React UI (Vite Dev): [http://localhost:5173](http://localhost:5173)
+- Backend API & WebSockets: [http://localhost:5000](http://localhost:5000)
 
 ---
 
-## 16. REST API Endpoint Overview
+## 7. Demonstration Credentials (Viva & Evaluation)
 
-| Method | Endpoint | Access | Purpose |
+The login screen includes **1-Click Quick-Fill Viva Buttons** for rapid role switching:
+
+| Role | Username / ID | Password | Scope & Primary URL |
 | :--- | :--- | :--- | :--- |
-| `GET` | `/api/health` | Public | System status and timestamp |
-| `POST` | `/api/auth/login` | Public | Authenticate user (Admin, Teacher, or Student) |
-| `GET` | `/api/auth/me` | Authenticated | Retrieve current user profile |
-| `GET` | `/api/auth/teachers` | Admin / Teacher | List faculty teacher directory |
-| `GET` | `/api/students` | Admin | Query students with search/filter/pagination |
-| `POST` | `/api/students` | Admin | Register new student |
-| `PUT` | `/api/students/:id` | Admin | Update student information |
-| `DELETE` | `/api/students/:id` | Admin | Delete student and cascade attendance |
-| `GET` | `/api/subjects` | Admin / Teacher | List curriculum subjects |
-| `POST` | `/api/subjects` | Admin | Add curriculum subject and assign teacher |
-| `POST` | `/api/attendance` | Admin / Teacher | Mark attendance (batch or single) |
-| `GET` | `/api/attendance` | Admin / Teacher | Query attendance logs with filters |
-| `PUT` | `/api/attendance/:id` | Admin / Teacher | Correct attendance status/remarks |
-| `DELETE` | `/api/attendance/:id` | Admin / Teacher | Delete individual attendance record |
-| `GET` | `/api/attendance/student/:id` | Student (Self) / Staff | Fetch day-wise personal attendance logs |
-| `GET` | `/api/attendance/student/:id/summary` | Student (Self) / Staff | Calculate dynamic attendance metrics |
-| `GET` | `/api/attendance/student/:id/monthly` | Student (Self) / Staff | Fetch monthly breakdown by month |
-| `GET` | `/api/teacher/dashboard-stats` | Teacher / Admin | Retrieve faculty dashboard statistics |
-| `GET` | `/api/teacher/subjects` | Teacher / Admin | Retrieve teacher's assigned subjects |
-| `GET` | `/api/teacher/absent-students` | Teacher / Admin | List daily absentees and chronic defaulters |
-| `GET` | `/api/teacher/reports` | Teacher / Admin | Generate daily, student, subject, monthly reports |
+| **Main Admin** | `admin@attendance.com` | `Admin@123` | Institutional Admin: [http://localhost:5000/admin/dashboard](http://localhost:5000/admin/dashboard) |
+| **HOD (IT Dept)** | `hod.it@attendance.com` | `Hod@123` | Department Portal: [http://localhost:5000/hod/dashboard](http://localhost:5000/hod/dashboard) |
+| **Faculty Teacher** | `teacher@attendance.com` | `Teacher@123` | **Radar Studio**: [http://localhost:5000/teacher/radar](http://localhost:5000/teacher/radar) |
+| **Student 1** | `STU1001` (Roll 1) | `Student@123` | Student Portal: [http://localhost:5000/student/dashboard](http://localhost:5000/student/dashboard) |
+| **Student 2** | `STU1002` (Roll 2) | `Student@123` | Multi-session test: [http://localhost:5000/student/dashboard](http://localhost:5000/student/dashboard) |
 
 ---
 
-## 17. Testing Instructions & Verified Results
+## 8. Automated Testing & Verification Suite
 
-An automated end-to-end test suite is included in `server/test_api.js`. To execute the test suite against the running server:
+ClassMate includes automated verification suites covering end-to-end user flows, security boundaries, and PWA compliance:
 
-```powershell
+```bash
+# 1. Comprehensive E2E Regression Suite (33 Tests)
 node server/test_api.js
+
+# 2. Deep 10-Feature Audit Suite (19 Tests)
+node server/verify_all_features.js
+
+# 3. PWA Standards & Privacy Compliance Suite (9 Tests)
+node server/verify_pwa.js
+
+# 4. Security Patches & IDOR Verification (3 Tests)
+node server/verify_security_fixes.js
 ```
 
-### Verified Test Results (100% Pass Rate):
-- ✅ **Test 1 — Health Check:** Server status `200 OK`.
-- ✅ **Test 2 — Admin Login:** Authenticated with admin role and received valid JWT.
-- ✅ **Test 3 — Teacher Login:** Authenticated as `Prof. Priya Verma` with teacher role.
-- ✅ **Test 4 — Student Login:** Authenticated with Student ID `STU1001` (`Aarav Patel`).
-- ✅ **Test 5 — Calculation Verification:** Confirmed $(49/53) \times 100 = 92.5\%$, matching API output.
-- ✅ **Test 6 — Student History & Filtering:** Retrieved 53 records and verified subject-level filtering.
-- ✅ **Test 7 — Monthly Summary:** Computed monthly breakdown for October 2026.
-- ✅ **Test 8 — Security & Record Isolation:** Verified that Student 1 receives HTTP `403 Forbidden` when attempting to access Student 2's summary or history.
-- ✅ **Test 9 — Teacher Dashboard Metrics:** Computed live assigned student count, conducted classes, and today's session status.
-- ✅ **Test 10 — Faculty Subject Assignment:** Verified 3 assigned courses for faculty (`IT301`, `IT302`, `IT304`).
-- ✅ **Test 11 — Batch Attendance Submission:** Marked batch attendance with status confirmation.
-- ✅ **Test 12 — Attendance Correction:** Edited attendance record and verified database persistence.
-- ✅ **Test 13 — Defaulter Detection:** Identified chronic defaulters with required attendance calculations.
-- ✅ **Test 14 — Faculty Reports:** Generated student-wise, daily, and monthly audit summaries.
-- ✅ **Test 15 — Security & Subject Assignment:** Verified that teachers receive HTTP `403 Forbidden` if attempting to mark attendance for unassigned subjects.
-- ✅ **Test 16 — Admin Features:** Verified faculty list retrieval and college-wide average attendance rate.
+### Verified Test Summary:
+- ✅ **Server Health & 4-Role Authentication** (Admin, HOD, Teacher, Student)
+- ✅ **Cross-Student Record Isolation** (HTTP 403 Forbidden verified)
+- ✅ **Smart Radar Session Lifecycle** (Cryptographic code generation, student submission, duplicate rejection)
+- ✅ **Socket.IO Real-Time Live Sync** (Teacher roster receives instant event without reload)
+- ✅ **W3C Geolocation & Geofencing** (Haversine distance calculation, out-of-bounds 400 rejection)
+- ✅ **Teacher Session Ownership** (Cross-teacher session edit/finalize blocked with 403)
+- ✅ **Timetable Engine & Collision Prevention** (Teacher & classroom double-booking rejected with 400)
+- ✅ **PWA Installability** (Manifest, Service Worker, 192px/512px/maskable icons, 0 API leaks)
 
 ---
 
-## 18. Recommended Screenshots Guide
+## 9. Online Deployment Preparation (Render + MongoDB Atlas)
 
-When preparing documentation or portfolio presentations, capture the following application views:
+ClassMate is pre-configured for turnkey single-port deployment on **Render**:
 
-1. **Login Page (`/login`):** Showing role-selector tabs (Admin/Teacher vs. Student) and 1-click viva quick-fill credentials.
-2. **Admin Dashboard (`/admin/dashboard`):** Showing total student counts, subject counts, and Recharts analytics.
-3. **Teacher Mark Attendance (`/teacher/mark-attendance`):** Showing subject selection, student roster table, and *Mark All Present* / *Mark All Absent* buttons.
-4. **Teacher Absentee & Defaulters (`/teacher/absent-students`):** Showing daily absentee table, chronic defaulters list, and the Export CSV action.
-5. **Teacher Reports & Analytics (`/teacher/reports`):** Showing subject averages, student breakdown, and CSV download.
-6. **Student Personal Dashboard (`/student/dashboard`):** Showing attendance percentage badge, 6 KPI cards, and 75% shortage alert banner.
-7. **Student Day-Wise Attendance (`/student/attendance`):** Showing table of classes attended/missed with green/red status badges and CSV export.
-8. **About Developer Modal:** Showing developer attribution, college details, and professional profile links.
-
----
-
-## 19. Demo Login Credentials (For Viva & Evaluation)
-
-The application login screen includes **1-Click Viva Quick-Fill Buttons** to instantly populate credentials:
-
-| Role | Username / ID | Password | Portal Permissions |
-| :--- | :--- | :--- | :--- |
-| **Admin** | `admin@attendance.com` | `Admin@123` | Institutional management, student CRUD, subject CRUD, all logs, analytics |
-| **Teacher** | `teacher@attendance.com` | `Teacher@123` | Assigned subjects, mark attendance, edit records, absentee monitoring |
-| **Student** | `STU1001` (or `aarav.patel.stu@attendance.com`) | `Student@123` | Personal attendance tracking, subject breakdown, history, monthly audit |
+1. **MongoDB Atlas Setup:**
+   - Create a free M0 cluster on [MongoDB Atlas](https://www.mongodb.com/cloud/atlas).
+   - Set Network Access to `0.0.0.0/0` (Allow from anywhere) and copy the `mongodb+srv://` connection string.
+2. **Render Web Service Configuration:**
+   - Connect repository on [Render](https://dashboard.render.com).
+   - **Environment:** `Node`
+   - **Build Command:** `npm run build`
+   - **Start Command:** `npm start`
+   - **Environment Variables:**
+     - `NODE_ENV`: `production`
+     - `PORT`: `5000`
+     - `MONGODB_URI`: `mongodb+srv://<user>:<password>@cluster0.xxxxx.mongodb.net/attendance_db?retryWrites=true&w=majority`
+     - `JWT_SECRET`: `your_random_64_character_hex_key`
+     - `JWT_EXPIRE`: `7d`
+     - `CORS_ORIGIN`: `*`
+3. **PWA & GPS on Production:**
+   - Render automatically provisions SSL/HTTPS. On mobile/desktop, users can immediately install ClassMate as a standalone PWA and grant GPS location permissions.
 
 ---
 
-## 20. Known Limitations & Future Enhancements
+## 10. Technical Realism Disclosure
 
-- **SMS / WhatsApp Alerts:** Integrate Twilio or WhatsApp Business API to send real-time shortage alerts directly to parents.
-- **Biometric / RFID Readers:** Interface classroom hardware scanners with an Express webhook to mark attendance automatically.
-- **Direct Excel (.xlsx) Export:** Expand beyond the current UTF-8 CSV exporter to offer formatted `.xlsx` workbooks with embedded formulas.
-- **Timetable Scheduling Engine:** Tie daily attendance options to dynamic timetable schedules based on academic day-orders.
-
----
-
-## 21. About the Developer
-
-**Ayush Shedge**  
-*Aspiring Data Analyst | B.Sc. Information Technology*  
-Vidyalankar School of Information Technology, Mumbai (Class of 2027)
-
-- **GitHub:** [https://github.com/ayushshedge24-tech](https://github.com/ayushshedge24-tech)
-- **LinkedIn:** [https://linkedin.com/in/ayush-shedge-analytics](https://linkedin.com/in/ayush-shedge-analytics)
-- **Project Repository:** [https://github.com/ayushshedge24-tech/attendance-management-system-mern](https://github.com/ayushshedge24-tech/attendance-management-system-mern)
+To maintain scientific and professional integrity:
+* **GPS & Geolocation:** Genuinely implemented via the W3C Geolocation API (`navigator.geolocation`) and audited on the backend using the spherical Haversine formula against configurable classroom bounds.
+* **Socket.IO:** Genuinely implemented for real-time WebSocket state transport (`attendance_marked_live`, `attendee_status_updated`). Does **not** detect physical hardware.
+* **Bluetooth Low Energy (BLE) & Wi-Fi MAC Discovery:** Standard web browsers sandboxing prevents silent background BLE scanning and router BSSID/ARP inspection. ClassMate transparently documents that native hardware BLE/Wi-Fi discovery requires companion native mobile apps or enterprise 802.1X RADIUS controller integration.
 
 ---
 
-*Academic Mini-Project — Developed and maintained by Ayush Shedge.*
+*ClassMate — Engineered and maintained by Ayush Shedge (Class of 2027).*

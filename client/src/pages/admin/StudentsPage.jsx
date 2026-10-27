@@ -14,7 +14,9 @@ import {
   FiMail,
   FiPhone,
   FiBookOpen,
+  FiDownload,
 } from 'react-icons/fi';
+import { exportToCsv } from '../../utils/exportCsv';
 
 const initialForm = {
   studentId: '',
@@ -30,6 +32,7 @@ const initialForm = {
 
 const StudentsPage = () => {
   const [students, setStudents] = useState([]);
+  const [programs, setPrograms] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [semesterFilter, setSemesterFilter] = useState('');
@@ -48,8 +51,23 @@ const StudentsPage = () => {
   const { success, error } = useToast();
 
   useEffect(() => {
+    fetchPrograms();
+  }, []);
+
+  useEffect(() => {
     fetchStudents();
   }, [semesterFilter, divisionFilter]);
+
+  const fetchPrograms = async () => {
+    try {
+      const res = await api.get('/programs');
+      if (res.data?.data) {
+        setPrograms(res.data.data);
+      }
+    } catch (err) {
+      console.warn('Failed to load programs for student creation:', err);
+    }
+  };
 
   const fetchStudents = async () => {
     setLoading(true);
@@ -150,6 +168,26 @@ const StudentsPage = () => {
     }
   };
 
+  const handleExportCsv = () => {
+    if (!students || students.length === 0) {
+      error('No student records available to export');
+      return;
+    }
+    const today = new Date().toISOString().substring(0, 10);
+    const columns = [
+      { label: 'Roll No', accessor: (s) => s.rollNumber || '' },
+      { label: 'Student ID', key: 'studentId' },
+      { label: 'Student Name', key: 'name' },
+      { label: 'Course / Program', key: 'course' },
+      { label: 'Semester', key: 'semester' },
+      { label: 'Division', key: 'division' },
+      { label: 'Email', key: 'email' },
+      { label: 'Phone', accessor: (s) => s.phone || 'N/A' },
+    ];
+    exportToCsv(columns, students, `student-directory-${today}.csv`);
+    success(`Exported ${students.length} student records to CSV`);
+  };
+
   return (
     <div className="space-y-6">
       {/* Page Title & Add Button */}
@@ -162,13 +200,22 @@ const StudentsPage = () => {
             Maintain student profiles, enrollment, semester allotments, and academic credentials
           </p>
         </div>
-        <button
-          onClick={handleOpenAdd}
-          className="flex items-center space-x-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-xs font-semibold text-white shadow-sm hover:bg-indigo-700 transition"
-        >
-          <FiPlus className="h-4 w-4" />
-          <span>Add New Student</span>
-        </button>
+        <div className="flex items-center space-x-2.5">
+          <button
+            onClick={handleExportCsv}
+            className="flex items-center space-x-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs font-semibold text-slate-700 shadow-sm hover:bg-slate-50 transition"
+          >
+            <FiDownload className="h-4 w-4 text-slate-500" />
+            <span>Export CSV</span>
+          </button>
+          <button
+            onClick={handleOpenAdd}
+            className="flex items-center space-x-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-xs font-semibold text-white shadow-sm hover:bg-indigo-700 transition"
+          >
+            <FiPlus className="h-4 w-4" />
+            <span>Add New Student</span>
+          </button>
+        </div>
       </div>
 
       {/* Filter and Search Bar */}
@@ -205,7 +252,7 @@ const StudentsPage = () => {
               className="rounded-xl border border-slate-200 px-3 py-2 text-xs text-slate-700 focus:border-indigo-600 focus:outline-none"
             >
               <option value="">All Divisions</option>
-              {['A', 'B', 'C'].map((d) => (
+              {['A', 'B', 'C', 'D'].map((d) => (
                 <option key={d} value={d}>Division {d}</option>
               ))}
             </select>
@@ -394,7 +441,7 @@ const StudentsPage = () => {
                 onChange={(e) => setFormData({ ...formData, division: e.target.value.toUpperCase() })}
                 className="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs focus:border-indigo-600 focus:outline-none"
               >
-                {['A', 'B', 'C'].map((d) => (
+                {['A', 'B', 'C', 'D'].map((d) => (
                   <option key={d} value={d}>Div {d}</option>
                 ))}
               </select>
@@ -412,13 +459,27 @@ const StudentsPage = () => {
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">Course Program</label>
-            <input
-              type="text"
+            <label className="block text-xs font-semibold text-slate-700 mb-1">Course / Program *</label>
+            <select
               value={formData.course}
               onChange={(e) => setFormData({ ...formData, course: e.target.value })}
               className="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs focus:border-indigo-600 focus:outline-none"
-            />
+            >
+              {programs.length > 0 ? (
+                programs.map((prog) => (
+                  <option key={prog._id || prog.code} value={prog.name}>
+                    {prog.name} ({prog.code})
+                  </option>
+                ))
+              ) : (
+                <>
+                  <option value="B.Tech Information Technology">B.Tech Information Technology</option>
+                  <option value="B.Tech Computer Science">B.Tech Computer Science</option>
+                  <option value="B.Sc. Information Technology">B.Sc. Information Technology</option>
+                  <option value="B.Sc. Computer Science">B.Sc. Computer Science</option>
+                </>
+              )}
+            </select>
           </div>
 
           <div className="flex justify-end space-x-2 pt-4 border-t border-slate-100">
@@ -520,7 +581,7 @@ const StudentsPage = () => {
                 onChange={(e) => setFormData({ ...formData, division: e.target.value.toUpperCase() })}
                 className="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs focus:border-indigo-600 focus:outline-none"
               >
-                {['A', 'B', 'C'].map((d) => (
+                {['A', 'B', 'C', 'D'].map((d) => (
                   <option key={d} value={d}>Div {d}</option>
                 ))}
               </select>
@@ -528,13 +589,33 @@ const StudentsPage = () => {
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">Course</label>
-            <input
-              type="text"
+            <label className="block text-xs font-semibold text-slate-700 mb-1">Course / Program *</label>
+            <select
               value={formData.course}
               onChange={(e) => setFormData({ ...formData, course: e.target.value })}
               className="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs focus:border-indigo-600 focus:outline-none"
-            />
+            >
+              {programs.length > 0 ? (
+                <>
+                  {!programs.some((p) => p.name === formData.course) && formData.course && (
+                    <option value={formData.course}>{formData.course}</option>
+                  )}
+                  {programs.map((prog) => (
+                    <option key={prog._id || prog.code} value={prog.name}>
+                      {prog.name} ({prog.code})
+                    </option>
+                  ))}
+                </>
+              ) : (
+                <>
+                  <option value={formData.course}>{formData.course}</option>
+                  <option value="B.Tech Information Technology">B.Tech Information Technology</option>
+                  <option value="B.Tech Computer Science">B.Tech Computer Science</option>
+                  <option value="B.Sc. Information Technology">B.Sc. Information Technology</option>
+                  <option value="B.Sc. Computer Science">B.Sc. Computer Science</option>
+                </>
+              )}
+            </select>
           </div>
 
           <div>

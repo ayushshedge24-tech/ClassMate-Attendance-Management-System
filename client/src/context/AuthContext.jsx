@@ -54,8 +54,9 @@ export const AuthProvider = ({ children }) => {
     logout,
     isAuthenticated: !!user && !!token,
     isAdmin: user?.role === 'admin',
+    isHod: user?.role === 'hod',
     isTeacher: user?.role === 'teacher',
-    isStaff: user?.role === 'admin' || user?.role === 'teacher',
+    isStaff: user?.role === 'admin' || user?.role === 'hod' || user?.role === 'teacher',
     isStudent: user?.role === 'student',
   };
 

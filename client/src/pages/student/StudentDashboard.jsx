@@ -4,6 +4,8 @@ import { useAuth } from '../../context/AuthContext';
 import api, { getErrorMessage } from '../../services/api';
 import StatCard from '../../components/StatCard';
 import ProgressBar from '../../components/ProgressBar';
+import StudentRadarWidget from '../../components/StudentRadarWidget';
+import StudentTimetableWidget from '../../components/StudentTimetableWidget';
 import {
   FiCheckCircle,
   FiXCircle,
@@ -81,6 +83,9 @@ const StudentDashboard = () => {
 
   const attendanceRate = summary?.attendancePercentage || 0;
   const isLowAttendance = attendanceRate < 75;
+  const totalClasses = summary?.totalClasses || 0;
+  const presentClasses = summary?.presentClasses || 0;
+  const neededClasses = Math.max(0, Math.ceil(3 * totalClasses - 4 * presentClasses));
 
   const pieData = [
     { name: 'Attended Classes', value: summary?.presentClasses || 0, color: '#10b981' },
@@ -127,6 +132,9 @@ const StudentDashboard = () => {
         </div>
       </div>
 
+      {/* Primary Feature: Smart Attendance Radar Card */}
+      <StudentRadarWidget onAttendanceMarked={fetchStudentSummary} />
+
       {/* Low Attendance Warning Alert if under 75% */}
       {isLowAttendance && (
         <div className="flex items-start space-x-3 rounded-2xl border border-amber-300 bg-amber-50 p-4 text-amber-900 shadow-sm">
@@ -136,7 +144,12 @@ const StudentDashboard = () => {
               Attendance Shortage Alert (Threshold: 75% Required)
             </h4>
             <p className="mt-0.5 text-amber-800">
-              Your overall attendance is currently at <span className="font-bold">{attendanceRate}%</span>, which is below the mandatory university policy of 75%. Please attend upcoming instructional sessions to regularize your eligibility.
+              Your overall attendance is currently at <span className="font-bold">{attendanceRate}%</span>, which is below the mandatory university policy of 75%.
+              {neededClasses > 0 && (
+                <span className="block mt-1 font-semibold text-amber-900">
+                  Target Recovery: You must attend at least {neededClasses} consecutive future lectures without absence to reach the 75% threshold.
+                </span>
+              )}
             </p>
           </div>
         </div>
@@ -187,6 +200,9 @@ const StudentDashboard = () => {
           subtitle={(summary?.subjectsBelowThreshold || 0) > 0 ? 'Courses need attention' : 'All courses safe'}
         />
       </div>
+
+      {/* Today's Timetable Widget */}
+      <StudentTimetableWidget />
 
       {/* Visual Analytics Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

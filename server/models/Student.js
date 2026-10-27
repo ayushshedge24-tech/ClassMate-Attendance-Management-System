@@ -35,6 +35,16 @@ const studentSchema = new mongoose.Schema(
       trim: true,
       default: 'B.Tech Computer Science',
     },
+    department: {
+      type: String,
+      trim: true,
+      default: 'Information Technology',
+    },
+    academicYear: {
+      type: String,
+      trim: true,
+      default: '2026-2027',
+    },
     semester: {
       type: Number,
       required: [true, 'Please provide semester'],

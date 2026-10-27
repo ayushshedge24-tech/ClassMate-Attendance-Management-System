@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <defs>
+    <linearGradient id="badgeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4f46e5" />
+      <stop offset="50%" stop-color="#4338ca" />
+      <stop offset="100%" stop-color="#06b6d4" />
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="128" fill="url(#badgeGrad)"/>
+  <!-- Concentric radar rings -->
+  <circle cx="256" cy="256" r="190" stroke="white" stroke-width="8" stroke-dasharray="14 14" opacity="0.45"/>
+  <circle cx="256" cy="256" r="130" stroke="white" stroke-width="10" opacity="0.7"/>
+  <!-- Central Graduation Cap -->
+  <path d="M256 96L80 184L256 272L432 184L256 96Z" fill="white"/>
+  <path d="M136 220V308C136 352 188 392 256 392C324 392 376 352 376 308V220L256 280L136 220Z" fill="white" fill-opacity="0.88"/>
+  <!-- Radar signal pulse dot -->
+  <circle cx="256" cy="256" r="28" fill="#38bdf8"/>
+  <path d="M420 196V290" stroke="#38bdf8" stroke-width="14" stroke-linecap="round"/>
+</svg>

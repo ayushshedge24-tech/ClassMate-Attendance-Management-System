@@ -26,6 +26,16 @@ const subjectSchema = new mongoose.Schema(
       trim: true,
       default: 'Information Technology',
     },
+    program: {
+      type: String,
+      trim: true,
+      default: 'B.Sc. IT',
+    },
+    academicYear: {
+      type: String,
+      trim: true,
+      default: '2026-2027',
+    },
     teacher: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',

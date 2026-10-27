@@ -29,7 +29,7 @@ const login = async (req, res, next) => {
           { studentId: identifier.toUpperCase() },
         ],
       }).select('+password');
-    } else if (role === 'admin' || role === 'teacher') {
+    } else if (role === 'admin' || role === 'teacher' || role === 'hod') {
       user = await User.findOne({ email: identifier.toLowerCase() }).select('+password');
     } else {
       // Auto-detect: first check User table, then check Student table

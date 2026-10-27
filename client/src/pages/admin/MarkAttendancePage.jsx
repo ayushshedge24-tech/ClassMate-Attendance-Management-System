@@ -282,7 +282,7 @@ const MarkAttendancePage = () => {
               onChange={(e) => setSelectedDivision(e.target.value)}
               className="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs font-medium text-slate-800 focus:border-indigo-600 focus:outline-none"
             >
-              {['A', 'B', 'C'].map((d) => (
+              {['A', 'B', 'C', 'D'].map((d) => (
                 <option key={d} value={d}>Division {d}</option>
               ))}
             </select>
